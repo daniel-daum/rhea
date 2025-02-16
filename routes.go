@@ -10,6 +10,7 @@ type HealthResponse struct {
 	Status string `json:"status" example:"healthy"`
 }
 
+
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	healthResponse := HealthResponse{Status: "healthy"}

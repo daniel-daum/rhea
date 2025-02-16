@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func slidingFishstick() {
+func slidingFishStick() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /health", HealthCheck)
