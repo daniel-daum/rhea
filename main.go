@@ -1,5 +1,13 @@
 package main
 
+import (
+	"log/slog"
+	"os"
+)
+
 func main() {
-	slidingFishStick()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
+	StartServer()
 }
