@@ -6,8 +6,11 @@ import (
 )
 
 func main() {
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	StartServer()
+	settings := SetSettings()
+
+	StartServer(*settings)
 }

@@ -1,5 +1,5 @@
 # sliding-fish-stick
-Traditional backend  repo for continued full-stack learning
+Traditional backend repo for continued full-stack learning
 
 
 ## TO DO:
@@ -8,4 +8,10 @@ Traditional backend  repo for continued full-stack learning
 - ~~Add graceful exiting~~
 - ~~Add inital logging system~~
 - ~~Add reading env variables~~
-- Add inital swagger documentation
+- ~~Add inital swagger documentation~~
+-- Add basic openapi doc components (remove bruno for scalar only?)
+-- implement create user route
+-- setup postgres sqlc generation
+-- setup db migrations
+-- setup ci/cd to test server
+-- figure out why status code is 0 in wrapped response

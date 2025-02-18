@@ -18,6 +18,11 @@ type Settings struct {
 	port string
 }
 
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
 func SetSettings() *Settings {
 	slog.Info("Reading environment variables")
 
@@ -48,21 +53,52 @@ func SetSettings() *Settings {
 	return &settings
 }
 
+func wrapResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{ResponseWriter: w}
+}
+
+func (rw *responseWriter) Status() int {
+	return rw.status
+}
+
+// LoggingMiddleware logs the incoming HTTP request & its duration.
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		start := time.Now()
+		wrapped := wrapResponseWriter(w)
+
+		next.ServeHTTP(wrapped, r)
+
+		slog.Info("Request",
+			"method", r.Method,
+			"path", r.URL.EscapedPath(),
+			"status", wrapped.status,
+			"duration", time.Since(start))
+
+	})
+}
+
 func SlidingFishStick(settings *Settings) *http.Server {
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /health", HealthCheck)
+	// Add routes here
+	router.HandleFunc("GET /api/health", HealthCheck)
+	router.HandleFunc("GET /api/docs", Reference)
+
+	// Middleware
+	finalRouter := LoggingMiddleware(router)
 
 	server := &http.Server{
 		Addr:    ":" + settings.port,
-		Handler: router,
+		Handler: finalRouter,
 	}
 
 	return server
 }
 
-func StartServer() error {
+func StartServer(settings Settings) error {
 
 	// When this context is canceled, we will gracefully stop the server.
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -72,9 +108,9 @@ func StartServer() error {
 	serr := make(chan error, 1)
 
 	// Start the server and collect its error return.
-	settings := SetSettings()
-	slog.Info("Starting Sliding Fishstick server", slog.String("port", settings.port), slog.String("env", settings.env))
-	server := SlidingFishStick(settings)
+
+	slog.Info("Starting Sliding Fishstick server", "port", settings.port, "env", settings.env)
+	server := SlidingFishStick(&settings)
 
 	go func() { serr <- server.ListenAndServe() }()
 
