@@ -6,12 +6,16 @@ import (
 )
 
 func main() {
+	// logging
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
+	// Configuration
 	settings := ServerSettings(false)
 	server := SlidingFishStick(settings)
 
-	StartServer(server)
+	// Start server
+	if err := StartServer(server); err != nil {
+		slog.Error("Server failed", "error", err)
+		os.Exit(1)
+	}
 }

@@ -64,32 +64,51 @@ func SlidingFishStick(settings *Settings) *http.Server {
 func StartServer(server *http.Server) error {
 
 	// When this context is canceled, we will gracefully stop the server.
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
 
-	// When the server is stopped *not by that context*, but by any other problems, it will return its error via this.
-	serr := make(chan error, 1)
+	// Channel for server errors
+	serverError := make(chan error, 1)
 
 	// Start the server and collect its error return.
 
-	go func() { serr <- server.ListenAndServe() }()
+	// Start server in goroutine
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			serverError <- err
+		}
+	}()
 
-	// Wait for either the server to fail, or the context to end.
+	// Wait for shutdown signal or server error
 	var err error
 	select {
-	case err = <-serr:
+		case err = <-serverError:
+        slog.Error("Server error", "error", err)
 	case <-ctx.Done():
+        slog.Info("Shutdown signal received")
 	}
 
-	// Make a best effort to shut down the server cleanly. We don’t
-	// need to collect the server’s error if we didn’t already;
-	// Shutdown will let us know (unless something worse happens, in
-	// which case it will tell us that).
-	sdctx, sdcancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer sdcancel()
-	// Cleanup start:
-	slog.Info("Stopping Sliding Fishstick server")
+	// Graceful shutdown
+    shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancelShutdown()
+    
+    slog.Info("Initiating graceful shutdown")
 
-	// cleanup end:
-	return errors.Join(err, server.Shutdown(sdctx))
+    if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
+        slog.Error("Server shutdown error", "error", shutdownErr)
+        return errors.Join(err, shutdownErr)
+    }
+
+    // Check if shutdown completed before timeout
+    select {
+    case <-shutdownCtx.Done():
+        if shutdownCtx.Err() == context.DeadlineExceeded {
+            slog.Error("Server shutdown timed out")
+            return errors.Join(err, context.DeadlineExceeded)
+        }
+    default:
+        slog.Info("Server shutdown completed successfully")
+    }
+
+    return err
 }
