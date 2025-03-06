@@ -5,52 +5,14 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/joho/godotenv"
 )
-
-type Settings struct {
-	env  string
-	port string
-}
 
 type responseWriter struct {
 	http.ResponseWriter
 	status int
-}
-
-func SetSettings() *Settings {
-	slog.Info("Reading environment variables")
-
-	if os.Getenv("SLIDING_FISHSTICK_ENV") != "PRODUCTION" {
-		err := godotenv.Load()
-		if err != nil {
-			slog.Error("Error loading .env file", slog.Any("error", err))
-		}
-	}
-	env := os.Getenv("SLIDING_FISHSTICK_ENV")
-	port := os.Getenv("SLIDING_FISHSTICK_PORT")
-
-	if env == "" {
-		env = "DEVELOPMENT"
-		slog.Warn("SLIDING_FISHSTICK_ENV env var is empty, using default", slog.String("env", env))
-	}
-
-	if port == "" {
-		port = "8000"
-		slog.Warn("SLIDING_FISHSTICK_PORT env var is empty, using default", slog.String("port", port))
-	}
-
-	settings := Settings{
-		env:  env,
-		port: port,
-	}
-
-	return &settings
 }
 
 func wrapResponseWriter(w http.ResponseWriter) *responseWriter {
@@ -89,16 +51,17 @@ func SlidingFishStick(settings *Settings) *http.Server {
 
 	// Middleware
 	finalRouter := LoggingMiddleware(router)
+	slog.Info("Starting Sliding Fishstick server", "port", settings.GetPort(), "env", settings.GetEnv())
 
 	server := &http.Server{
-		Addr:    ":" + settings.port,
+		Addr:    ":" + settings.GetPort(),
 		Handler: finalRouter,
 	}
 
 	return server
 }
 
-func StartServer(settings Settings) error {
+func StartServer(server *http.Server) error {
 
 	// When this context is canceled, we will gracefully stop the server.
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -108,9 +71,6 @@ func StartServer(settings Settings) error {
 	serr := make(chan error, 1)
 
 	// Start the server and collect its error return.
-
-	slog.Info("Starting Sliding Fishstick server", "port", settings.port, "env", settings.env)
-	server := SlidingFishStick(&settings)
 
 	go func() { serr <- server.ListenAndServe() }()
 

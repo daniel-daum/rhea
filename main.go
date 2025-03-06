@@ -10,7 +10,8 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	settings := SetSettings()
+	settings := ServerSettings(false)
+	server := SlidingFishStick(settings)
 
-	StartServer(*settings)
+	StartServer(server)
 }
