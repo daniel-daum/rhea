@@ -15,11 +15,11 @@ type Settings struct {
 	port string
 }
 
-func (s Settings) GetEnv() string {
+func (s Settings) Env() string {
 	return s.env
 }
 
-func (s Settings) GetPort() string {
+func (s Settings) Port() string {
 	return s.port
 }
 
