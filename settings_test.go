@@ -70,7 +70,7 @@ func TestServerSettings(t *testing.T) {
 		os.Unsetenv("PORT")
 
 		// Get settings
-		settings := ServerSettings(true)
+		settings := ServerSettings()
 
 		// Check default values
 		if settings.Env() != defaultEnv {
@@ -91,7 +91,7 @@ func TestServerSettings(t *testing.T) {
 		os.Setenv("PORT", customPort)
 
 		// Get settings
-		settings := ServerSettings(true)
+		settings := ServerSettings()
 
 		// Check custom values
 		if settings.Env() != customEnv {

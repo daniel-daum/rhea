@@ -3,8 +3,6 @@ package main
 import (
 	"log/slog"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 const defaultEnv string = "development"
@@ -33,15 +31,7 @@ func getEnvWithDefaults(key string, defaultValue string) string {
 	return envValue
 }
 
-func ServerSettings(testFlag bool) *Settings {
-	if !testFlag {
-		err := godotenv.Load()
-
-		if err != nil {
-			slog.Error("Error loading .env file", "error", err)
-		}
-	}
-
+func ServerSettings() *Settings {
 	return &Settings{
 		env:  getEnvWithDefaults("ENV", defaultEnv),
 		port: getEnvWithDefaults("PORT", defaultPort),
