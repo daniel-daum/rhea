@@ -1,9 +1,0 @@
-{
-  "version": "1",
-  "name": "sliding-fishstick",
-  "type": "collection",
-  "ignore": [
-    "node_modules",
-    ".git"
-  ]
-}
