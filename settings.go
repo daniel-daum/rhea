@@ -5,7 +5,10 @@ import (
 	"os"
 )
 
-const defaultEnv string = "development"
+const env string = "SFS_ENV"
+const port string = "SFS_PORT"
+
+const defaultEnv string = "local"
 const defaultPort string = "8000"
 
 type Settings struct {
@@ -33,8 +36,8 @@ func getEnvWithDefaults(key string, defaultValue string) string {
 
 func ServerSettings() *Settings {
 	return &Settings{
-		env:  getEnvWithDefaults("ENV", defaultEnv),
-		port: getEnvWithDefaults("PORT", defaultPort),
+		env:  getEnvWithDefaults(env, defaultEnv),
+		port: getEnvWithDefaults(port, defaultPort),
 	}
 
 }

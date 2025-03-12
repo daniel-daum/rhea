@@ -66,8 +66,8 @@ func TestServerSettings(t *testing.T) {
 	// Test with test flag true (no .env file loading)
 	t.Run("Server Settings with test flag", func(t *testing.T) {
 		// Clear environment variables
-		os.Unsetenv("ENV")
-		os.Unsetenv("PORT")
+		os.Unsetenv("SFS_ENV")
+		os.Unsetenv("SFS_PORT")
 
 		// Get settings
 		settings := ServerSettings()
@@ -87,8 +87,8 @@ func TestServerSettings(t *testing.T) {
 		customEnv := "production"
 		customPort := "3000"
 
-		os.Setenv("ENV", customEnv)
-		os.Setenv("PORT", customPort)
+		os.Setenv("SFS_ENV", customEnv)
+		os.Setenv("SFS_PORT", customPort)
 
 		// Get settings
 		settings := ServerSettings()
@@ -103,7 +103,7 @@ func TestServerSettings(t *testing.T) {
 		}
 
 		// Cleanup
-		os.Unsetenv("ENV")
-		os.Unsetenv("PORT")
+		os.Unsetenv("SFS_ENV")
+		os.Unsetenv("SFS_PORT")
 	})
 }
