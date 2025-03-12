@@ -3,11 +3,12 @@ package main
 import (
 	"log/slog"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
-const defaultEnv string = "development"
+const env string = "SFS_ENV"
+const port string = "SFS_PORT"
+
+const defaultEnv string = "local"
 const defaultPort string = "8000"
 
 type Settings struct {
@@ -15,11 +16,11 @@ type Settings struct {
 	port string
 }
 
-func (s Settings) GetEnv() string {
+func (s Settings) Env() string {
 	return s.env
 }
 
-func (s Settings) GetPort() string {
+func (s Settings) Port() string {
 	return s.port
 }
 
@@ -33,18 +34,10 @@ func getEnvWithDefaults(key string, defaultValue string) string {
 	return envValue
 }
 
-func ServerSettings(testFlag bool) *Settings {
-	if !testFlag {
-		err := godotenv.Load()
-
-		if err != nil {
-			slog.Error("Error loading .env file", "error", err)
-		}
-	}
-
+func ServerSettings() *Settings {
 	return &Settings{
-		env:  getEnvWithDefaults("ENV", defaultEnv),
-		port: getEnvWithDefaults("PORT", defaultPort),
+		env:  getEnvWithDefaults(env, defaultEnv),
+		port: getEnvWithDefaults(port, defaultPort),
 	}
 
 }

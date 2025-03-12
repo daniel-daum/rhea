@@ -66,19 +66,19 @@ func TestServerSettings(t *testing.T) {
 	// Test with test flag true (no .env file loading)
 	t.Run("Server Settings with test flag", func(t *testing.T) {
 		// Clear environment variables
-		os.Unsetenv("ENV")
-		os.Unsetenv("PORT")
+		os.Unsetenv("SFS_ENV")
+		os.Unsetenv("SFS_PORT")
 
 		// Get settings
-		settings := ServerSettings(true)
+		settings := ServerSettings()
 
 		// Check default values
-		if settings.GetEnv() != defaultEnv {
-			t.Errorf("Expected env to be %s, got %s", defaultEnv, settings.GetEnv())
+		if settings.Env() != defaultEnv {
+			t.Errorf("Expected env to be %s, got %s", defaultEnv, settings.Env())
 		}
 
-		if settings.GetPort() != defaultPort {
-			t.Errorf("Expected port to be %s, got %s", defaultPort, settings.GetPort())
+		if settings.Port() != defaultPort {
+			t.Errorf("Expected port to be %s, got %s", defaultPort, settings.Port())
 		}
 	})
 
@@ -87,23 +87,23 @@ func TestServerSettings(t *testing.T) {
 		customEnv := "production"
 		customPort := "3000"
 
-		os.Setenv("ENV", customEnv)
-		os.Setenv("PORT", customPort)
+		os.Setenv("SFS_ENV", customEnv)
+		os.Setenv("SFS_PORT", customPort)
 
 		// Get settings
-		settings := ServerSettings(true)
+		settings := ServerSettings()
 
 		// Check custom values
-		if settings.GetEnv() != customEnv {
-			t.Errorf("Expected env to be %s, got %s", customEnv, settings.GetEnv())
+		if settings.Env() != customEnv {
+			t.Errorf("Expected env to be %s, got %s", customEnv, settings.Env())
 		}
 
-		if settings.GetPort() != customPort {
-			t.Errorf("Expected port to be %s, got %s", customPort, settings.GetPort())
+		if settings.Port() != customPort {
+			t.Errorf("Expected port to be %s, got %s", customPort, settings.Port())
 		}
 
 		// Cleanup
-		os.Unsetenv("ENV")
-		os.Unsetenv("PORT")
+		os.Unsetenv("SFS_ENV")
+		os.Unsetenv("SFS_PORT")
 	})
 }

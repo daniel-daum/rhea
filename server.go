@@ -51,10 +51,10 @@ func SlidingFishStick(settings *Settings) *http.Server {
 
 	// Middleware
 	finalRouter := LoggingMiddleware(router)
-	slog.Info("Starting Sliding Fishstick server", "port", settings.GetPort(), "env", settings.GetEnv())
+	slog.Info("Starting Sliding Fishstick server", "port", settings.Port(), "env", settings.Env())
 
 	server := &http.Server{
-		Addr:    ":" + settings.GetPort(),
+		Addr:    ":" + settings.Port(),
 		Handler: finalRouter,
 	}
 
