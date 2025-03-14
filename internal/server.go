@@ -70,8 +70,6 @@ func StartServer(server *http.Server) error {
 	// Channel for server errors
 	serverError := make(chan error, 1)
 
-	// Start the server and collect its error return.
-
 	// Start server in goroutine
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
