@@ -8,6 +8,6 @@ RUN go mod download
 
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /sliding-fish-stick
+RUN CGO_ENABLED=0 GOOS=linux go build -C ./internal -o /sliding-fish-stick
 
 CMD ["/sliding-fish-stick"]
