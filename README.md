@@ -32,7 +32,7 @@ To run via docker
 
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/yourusername/sliding-fish-stick.git
+    git clone https://github.com/daniel-daum/sliding-fish-stick.git
     cd sliding-fish-stick
     ```
 
