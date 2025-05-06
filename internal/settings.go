@@ -5,9 +5,9 @@ import (
 	"os"
 )
 
-const env string = "SFS_ENV"
-const port string = "SFS_PORT"
-const dbUrl string = "SFS_DB_URL"
+const env string = "RHEA_ENV"
+const port string = "RHEA_PORT"
+const dbUrl string = "RHEA_DB_URL"
 
 const defaultEnv string = "local"
 const defaultPort string = "8000"

@@ -5,7 +5,7 @@ run:
 	@dotenvx run -- go run ./internal
 
 build:
-	@go build -C ./internal -o ../sliding-fish-stick 
+	@go build -C ./internal -o ../rhea 
 
 migrate-up name:
     dotenvx run -- atlas migrate diff {{name}} --env local --dir file://internal/database/migrations

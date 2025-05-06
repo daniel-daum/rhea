@@ -1,16 +1,16 @@
-# Sliding Fishstick
-Sliding Fishstick is a project aimed at building a traditional REST API using the Go programming language. This project is designed for practice and learning purposes, and it incorporates various tools and libraries to facilitate development, database management, and environment configuration.
+# Rhea
+Rhea is a project aimed at building a traditional REST API using the Go programming language. This project is designed for practice and learning purposes, and it incorporates various tools and libraries to facilitate development, database management, and environment configuration.
 
 # Architecture
 I use net/http for route handling. Atlas for migrations, sqlc for queries, and postgres as my database. No real architecture patterns other than that.
 
 # Running - Natively
-To run the Sliding Fishstick application, follow these steps:
+To run the rhea api, follow these steps:
 
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/daniel-daum/sliding-fish-stick.git
-    cd sliding-fish-stick
+    git clone https://github.com/daniel-daum/rhea.git
+    cd rhea
     ```
 
 2. **Set up environment variables:**
@@ -32,8 +32,8 @@ To run via docker
 
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/daniel-daum/sliding-fish-stick.git
-    cd sliding-fish-stick
+    git clone https://github.com/daniel-daum/rhea.git
+    cd rhea
     ```
 
 2. **Run docker compose**

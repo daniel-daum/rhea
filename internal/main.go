@@ -11,10 +11,10 @@ func main() {
 
 	// Configuration
 	settings := ServerSettings()
-	server := SlidingFishStick(settings)
+	rhea := Rhea(settings)
 
 	// Start server
-	if err := StartServer(server); err != nil {
+	if err := StartServer(rhea); err != nil {
 		slog.Error("Server failed", "error", err)
 		os.Exit(1)
 	}

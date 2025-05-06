@@ -25,4 +25,4 @@ go.work.sum
 .env
 
 # prevent accidentally commiting binary 
-sliding-fish-stick 
+rhea

@@ -41,7 +41,7 @@ func Reference(w http.ResponseWriter, r *http.Request) {
 	htmlContent, err := scalar.ApiReferenceHTML(&scalar.Options{
 		SpecURL: "./docs/swagger.yaml",
 		CustomOptions: scalar.CustomOptions{
-			PageTitle: "Sliding Fishstick API",
+			PageTitle: "Rhea API",
 		},
 		DarkMode: true,
 	})

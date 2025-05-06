@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: Sliding Fishstick 
+  title: Rhea
   description: Traditional REST API for continued full-stack learning
   version: 0.1.0
 

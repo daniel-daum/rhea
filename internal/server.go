@@ -41,7 +41,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func SlidingFishStick(settings *Settings) *http.Server {
+func Rhea(settings *Settings) *http.Server {
 
 	router := http.NewServeMux()
 
@@ -51,7 +51,7 @@ func SlidingFishStick(settings *Settings) *http.Server {
 
 	// Middleware
 	finalRouter := LoggingMiddleware(router)
-	slog.Info("Starting Sliding Fishstick server", "port", settings.Port(), "env", settings.Env())
+	slog.Info("Starting Rhea listener", "port", settings.Port(), "env", settings.Env())
 
 	server := &http.Server{
 		Addr:    ":" + settings.Port(),
