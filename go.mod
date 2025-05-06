@@ -1,4 +1,4 @@
-module github.com/daniel-daum/sliding-fish-stick
+module github.com/daniel-daum/rhea
 
 go 1.23.6
 

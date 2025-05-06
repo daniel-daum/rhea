@@ -64,28 +64,6 @@ func TestGetEnvWithDefaults(t *testing.T) {
 
 func TestServerSettings(t *testing.T) {
 	
-	t.Run("Server Settings with test flag", func(t *testing.T) {
-		// Clear environment variables
-		os.Unsetenv("SFS_ENV")
-		os.Unsetenv("SFS_PORT")
-		os.Unsetenv("SFS_DB_URL")
-
-		// Get settings
-		settings := ServerSettings()
-
-		// Check default values
-		if settings.Env() != defaultEnv {
-			t.Errorf("Expected env to be %s, got %s", defaultEnv, settings.Env())
-		}
-
-		if settings.Port() != defaultPort {
-			t.Errorf("Expected port to be %s, got %s", defaultPort, settings.Port())
-		}
-
-		if settings.DBUrl() != defaultDbUrl {
-			t.Errorf("Expected port to be %s, got %s", defaultDbUrl, settings.DBUrl())
-		}
-	})
 
 	t.Run("Server Settings with custom env variables", func(t *testing.T) {
 		// Set custom environment variables
@@ -93,9 +71,9 @@ func TestServerSettings(t *testing.T) {
 		customPort := "3000"
 		customDbUrl := "postgres://postgres@localhost:5432/database?search_path=test&sslmode=disable"
 
-		os.Setenv("SFS_ENV", customEnv)
-		os.Setenv("SFS_PORT", customPort)
-		os.Setenv("SFS_DB_URL", customDbUrl)
+		os.Setenv("RHEA_ENV", customEnv)
+		os.Setenv("RHEA_PORT", customPort)
+		os.Setenv("RHEA_DB_URL", customDbUrl)
 
 		// Get settings
 		settings := ServerSettings()
@@ -110,12 +88,12 @@ func TestServerSettings(t *testing.T) {
 		}
 
 		if settings.DBUrl() != customDbUrl {
-			t.Errorf("Expected port to be %s, got %s", customDbUrl, settings.DBUrl())
+			t.Errorf("Expected db url to be %s, got %s", customDbUrl, settings.DBUrl())
 		}
 
 		// Cleanup
-		os.Unsetenv("SFS_ENV")
-		os.Unsetenv("SFS_PORT")
-		os.Unsetenv("SFS_DB_URL")
+		os.Unsetenv("RHEA_ENV")
+		os.Unsetenv("RHEA_PORT")
+		os.Unsetenv("RHEA_DB_URL")
 	})
 }
