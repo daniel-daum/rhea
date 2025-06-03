@@ -18,3 +18,7 @@ migrate-deploy:
 
 migrate-clean:
     dotenvx run -- atlas schema clean --env local
+
+generate-sqlc:
+    dotenvx run -- sqlc generate
+    
