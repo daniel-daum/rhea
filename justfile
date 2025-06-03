@@ -21,3 +21,4 @@ migrate-clean:
 
 generate-sqlc:
     dotenvx run -- sqlc generate
+    
