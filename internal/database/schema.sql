@@ -1,5 +1,4 @@
-
-CREATE TABLE user (
+CREATE TABLE users (
     user_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
@@ -10,18 +9,18 @@ CREATE TABLE user (
     deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE chain (
+CREATE TABLE chains (
     chain_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
     deleted_at TIMESTAMPTZ
 );
--- need chain relationship
-CREATE TABLE store (
+
+CREATE TABLE stores (
     store_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    ---chain_id: relationship to chain (CHAIN_ID)
+    chain_id BIGINT NOT NULL REFERENCES chains(chain_id),
     store_number INTEGER NOT NULL,
     street_address TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -30,10 +29,9 @@ CREATE TABLE store (
     deleted_at TIMESTAMPTZ
 );
 
--- need chain relationship
-CREATE TABLE item (
+CREATE TABLE items (
     item_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    -- chain_id: relationship to chain (store? or chain? items are unique at the chain level -> chain)
+    chain_id BIGINT NOT NULL REFERENCES chains(chain_id),
     item_number INTEGER NOT NULL,
     item_name TEXT NOT NULL,
     item_category TEXT,
@@ -43,10 +41,9 @@ CREATE TABLE item (
     deleted_at TIMESTAMPTZ 
 );
 
--- need store relationship
-CREATE TABLE reciept (
-    reciept_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,,
-    -- store_id: relationship to store
+CREATE TABLE reciepts (
+    reciept_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    store_id BIGINT NOT NULL REFERENCES stores(store_id),
     reciept_number BIGINT NOT NULL,
     transaction_date TIMESTAMPTZ NOT NULL,
     final_total NUMERIC(18,7) NOT NULL,
@@ -55,12 +52,10 @@ CREATE TABLE reciept (
     deleted_at TIMESTAMPTZ  
 );
 
--- need receipt relationship
--- need item relationship
-CREATE TABLE grocery (
-    id uuid UNIQUE NOT NULL PRIMARY KEY,
-    --receipt_id: relationship to recipt
-    --item_id: relationship to item
+CREATE TABLE groceries (
+    grocery_id uuid UNIQUE NOT NULL PRIMARY KEY,
+    reciept_id BIGINT NOT NULL REFERENCES reciepts(reciept_id),
+    item_id BIGINT NOT NULL REFERENCES items(item_id),
     quantity INTEGER,
     price_per_quantity NUMERIC(18,7),
     weight NUMERIC(18,7),
