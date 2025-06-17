@@ -41,10 +41,10 @@ CREATE TABLE items (
     deleted_at TIMESTAMPTZ
 );
 
-CREATE TABLE reciepts (
-    reciept_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+CREATE TABLE receipts (
+    receipt_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     store_id BIGINT NOT NULL REFERENCES stores (store_id),
-    reciept_number BIGINT NOT NULL,
+    receipt_number BIGINT NOT NULL,
     transaction_date TIMESTAMPTZ NOT NULL,
     final_total NUMERIC(18, 7) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT (now ()),
@@ -53,8 +53,8 @@ CREATE TABLE reciepts (
 );
 
 CREATE TABLE groceries (
-    grocery_id uuid UNIQUE NOT NULL PRIMARY KEY,
-    reciept_id BIGINT NOT NULL REFERENCES reciepts (reciept_id),
+    grocery_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    receipt_id BIGINT NOT NULL REFERENCES receipts (receipt_id),
     item_id BIGINT NOT NULL REFERENCES items (item_id),
     quantity INTEGER,
     price_per_quantity NUMERIC(18, 7),

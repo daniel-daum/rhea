@@ -42,21 +42,21 @@ SELECT * FROM items WHERE item_id = $1;
 DELETE FROM items WHERE item_id = $1;
 
 
--- reciepts
--- name: CreateReciept :one
-INSERT INTO reciepts (store_id, reciept_number, transaction_date, final_total) VALUES ($1, $2, $3, $4) RETURNING *;
+-- receipts
+-- name: Createreceipt :one
+INSERT INTO receipts (store_id, receipt_number, transaction_date, final_total) VALUES ($1, $2, $3, $4) RETURNING *;
 
--- name: GetReciept :one
-SELECT * FROM reciepts WHERE reciept_id = $1;
+-- name: Getreceipt :one
+SELECT * FROM receipts WHERE receipt_id = $1;
 
--- name: DeleteReciept :exec
-DELETE FROM reciepts WHERE reciept_id = $1;
+-- name: Deletereceipt :exec
+DELETE FROM receipts WHERE receipt_id = $1;
 
 
 -- groceries
 -- name: CreateGrocery :one
 INSERT INTO groceries 
-    (reciept_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid) 
+    (receipt_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid) 
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
 
 -- name: GetGrocery :one
