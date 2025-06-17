@@ -1,5 +1,5 @@
 env "local" {
   src = "file://internal/database/schema.sql"
-  url = getenv("SFS_ATLAS_URL")
-  dev = getenv("SFS_ATLAS_DEV")
+  url = getenv("RHEA_ATLAS_URL")
+  dev = getenv("RHEA_ATLAS_DEV")
 }
