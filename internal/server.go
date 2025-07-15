@@ -23,6 +23,11 @@ func (rw *responseWriter) Status() int {
 	return rw.status
 }
 
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
 // LoggingMiddleware logs the incoming HTTP request & its duration.
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -80,33 +85,33 @@ func StartServer(server *http.Server) error {
 	// Wait for shutdown signal or server error
 	var err error
 	select {
-		case err = <-serverError:
-        slog.Error("Server error", "error", err)
+	case err = <-serverError:
+		slog.Error("Server error", "error", err)
 	case <-ctx.Done():
-        slog.Info("Shutdown signal received")
+		slog.Info("Shutdown signal received")
 	}
 
 	// Graceful shutdown
-    shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 30*time.Second)
-    defer cancelShutdown()
-    
-    slog.Info("Initiating graceful shutdown")
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelShutdown()
 
-    if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
-        slog.Error("Server shutdown error", "error", shutdownErr)
-        return errors.Join(err, shutdownErr)
-    }
+	slog.Info("Initiating graceful shutdown")
 
-    // Check if shutdown completed before timeout
-    select {
-    case <-shutdownCtx.Done():
-        if shutdownCtx.Err() == context.DeadlineExceeded {
-            slog.Error("Server shutdown timed out")
-            return errors.Join(err, context.DeadlineExceeded)
-        }
-    default:
-        slog.Info("Server shutdown completed successfully")
-    }
+	if shutdownErr := server.Shutdown(shutdownCtx); shutdownErr != nil {
+		slog.Error("Server shutdown error", "error", shutdownErr)
+		return errors.Join(err, shutdownErr)
+	}
 
-    return err
+	// Check if shutdown completed before timeout
+	select {
+	case <-shutdownCtx.Done():
+		if shutdownCtx.Err() == context.DeadlineExceeded {
+			slog.Error("Server shutdown timed out")
+			return errors.Join(err, context.DeadlineExceeded)
+		}
+	default:
+		slog.Info("Server shutdown completed successfully")
+	}
+
+	return err
 }
