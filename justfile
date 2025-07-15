@@ -2,10 +2,10 @@ test:
 	@go test ./internal
 
 run:
-	@dotenvx run -- go run ./internal
+	cd internal && dotenvx run -- air
 
 build:
-	@go build -C ./internal -o ../rhea 
+	@go build -C ./internal -o ../rhea
 
 migrate-up name:
     dotenvx run -- atlas migrate diff {{name}} --env local --dir file://internal/database/migrations
@@ -21,4 +21,3 @@ migrate-clean:
 
 generate-sqlc:
     dotenvx run -- sqlc generate
-    
