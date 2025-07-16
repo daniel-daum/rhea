@@ -1,5 +1,25 @@
 services:
-  server:
-    build: .
+  backend:
+    build:
+      context: .
+      dockerfile: ./internal/Dockerfile
     ports:
       - "8000:8000"
+
+    networks:
+      - rhea-network
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: ./Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - rhea-network
+
+networks:
+  rhea-network:
+    driver: bridge
