@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: ./internal/Dockerfile
+      dockerfile: ./backend/Dockerfile
     ports:
       - "8000:8000"
 

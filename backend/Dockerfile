@@ -11,6 +11,6 @@ COPY . ./
 # Copy swagger docs from the parent context
 COPY api/swagger ./api/swagger
 
-RUN CGO_ENABLED=0 GOOS=linux go build -C ./internal -o /rhea
+RUN CGO_ENABLED=0 GOOS=linux go build -C ./backend -o /rhea
 
 CMD ["/rhea"]
