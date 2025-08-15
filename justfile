@@ -19,5 +19,6 @@ migrate-deploy:
 migrate-clean:
     dotenvx run -- atlas schema clean --env local
 
-generate-sqlc:
-    dotenvx run -- sqlc generate
+# Reads the database/query.sql file and generates typesafe Go code in the database/sqlc folder
+generate:
+    cd backend && dotenvx run -- sqlc generate
