@@ -9,7 +9,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -39,12 +38,12 @@ func (q *Queries) CreateChain(ctx context.Context, arg CreateChainParams) (Chain
 
 const createGrocery = `-- name: CreateGrocery :one
 INSERT INTO groceries 
-    (reciept_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING grocery_id, reciept_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid, created_at, updated_at, deleted_at
+    (receipt_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING grocery_id, receipt_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid, created_at, updated_at, deleted_at
 `
 
 type CreateGroceryParams struct {
-	RecieptID        int64
+	ReceiptID        int64
 	ItemID           int64
 	Quantity         pgtype.Int4
 	PricePerQuantity pgtype.Numeric
@@ -58,7 +57,7 @@ type CreateGroceryParams struct {
 // groceries
 func (q *Queries) CreateGrocery(ctx context.Context, arg CreateGroceryParams) (Grocery, error) {
 	row := q.db.QueryRow(ctx, createGrocery,
-		arg.RecieptID,
+		arg.ReceiptID,
 		arg.ItemID,
 		arg.Quantity,
 		arg.PricePerQuantity,
@@ -71,7 +70,7 @@ func (q *Queries) CreateGrocery(ctx context.Context, arg CreateGroceryParams) (G
 	var i Grocery
 	err := row.Scan(
 		&i.GroceryID,
-		&i.RecieptID,
+		&i.ReceiptID,
 		&i.ItemID,
 		&i.Quantity,
 		&i.PricePerQuantity,
@@ -116,39 +115,6 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 		&i.ItemName,
 		&i.ItemCategory,
 		&i.ItemDescription,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const createReciept = `-- name: CreateReciept :one
-INSERT INTO reciepts (store_id, reciept_number, transaction_date, final_total) VALUES ($1, $2, $3, $4) RETURNING reciept_id, store_id, reciept_number, transaction_date, final_total, created_at, updated_at, deleted_at
-`
-
-type CreateRecieptParams struct {
-	StoreID         int64
-	RecieptNumber   int64
-	TransactionDate time.Time
-	FinalTotal      pgtype.Numeric
-}
-
-// reciepts
-func (q *Queries) CreateReciept(ctx context.Context, arg CreateRecieptParams) (Reciept, error) {
-	row := q.db.QueryRow(ctx, createReciept,
-		arg.StoreID,
-		arg.RecieptNumber,
-		arg.TransactionDate,
-		arg.FinalTotal,
-	)
-	var i Reciept
-	err := row.Scan(
-		&i.RecieptID,
-		&i.StoreID,
-		&i.RecieptNumber,
-		&i.TransactionDate,
-		&i.FinalTotal,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -222,6 +188,39 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const createreceipt = `-- name: Createreceipt :one
+INSERT INTO receipts (store_id, receipt_number, transaction_date, final_total) VALUES ($1, $2, $3, $4) RETURNING receipt_id, store_id, receipt_number, transaction_date, final_total, created_at, updated_at, deleted_at
+`
+
+type CreatereceiptParams struct {
+	StoreID         int64
+	ReceiptNumber   int64
+	TransactionDate time.Time
+	FinalTotal      pgtype.Numeric
+}
+
+// receipts
+func (q *Queries) Createreceipt(ctx context.Context, arg CreatereceiptParams) (Receipt, error) {
+	row := q.db.QueryRow(ctx, createreceipt,
+		arg.StoreID,
+		arg.ReceiptNumber,
+		arg.TransactionDate,
+		arg.FinalTotal,
+	)
+	var i Receipt
+	err := row.Scan(
+		&i.ReceiptID,
+		&i.StoreID,
+		&i.ReceiptNumber,
+		&i.TransactionDate,
+		&i.FinalTotal,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const deleteChain = `-- name: DeleteChain :exec
 DELETE FROM chains WHERE chain_id = $1
 `
@@ -235,7 +234,7 @@ const deleteGrocery = `-- name: DeleteGrocery :exec
 DELETE FROM groceries WHERE grocery_id = $1
 `
 
-func (q *Queries) DeleteGrocery(ctx context.Context, groceryID uuid.UUID) error {
+func (q *Queries) DeleteGrocery(ctx context.Context, groceryID int64) error {
 	_, err := q.db.Exec(ctx, deleteGrocery, groceryID)
 	return err
 }
@@ -246,15 +245,6 @@ DELETE FROM items WHERE item_id = $1
 
 func (q *Queries) DeleteItem(ctx context.Context, itemID int64) error {
 	_, err := q.db.Exec(ctx, deleteItem, itemID)
-	return err
-}
-
-const deleteReciept = `-- name: DeleteReciept :exec
-DELETE FROM reciepts WHERE reciept_id = $1
-`
-
-func (q *Queries) DeleteReciept(ctx context.Context, recieptID int64) error {
-	_, err := q.db.Exec(ctx, deleteReciept, recieptID)
 	return err
 }
 
@@ -273,6 +263,15 @@ DELETE FROM users WHERE user_id = $1
 
 func (q *Queries) DeleteUser(ctx context.Context, userID int64) error {
 	_, err := q.db.Exec(ctx, deleteUser, userID)
+	return err
+}
+
+const deletereceipt = `-- name: Deletereceipt :exec
+DELETE FROM receipts WHERE receipt_id = $1
+`
+
+func (q *Queries) Deletereceipt(ctx context.Context, receiptID int64) error {
+	_, err := q.db.Exec(ctx, deletereceipt, receiptID)
 	return err
 }
 
@@ -295,15 +294,15 @@ func (q *Queries) GetChain(ctx context.Context, chainID int64) (Chain, error) {
 }
 
 const getGrocery = `-- name: GetGrocery :one
-SELECT grocery_id, reciept_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid, created_at, updated_at, deleted_at FROM groceries WHERE grocery_id = $1
+SELECT grocery_id, receipt_id, item_id, quantity, price_per_quantity, weight, price_per_lb, total_price, discount_amount, total_paid, created_at, updated_at, deleted_at FROM groceries WHERE grocery_id = $1
 `
 
-func (q *Queries) GetGrocery(ctx context.Context, groceryID uuid.UUID) (Grocery, error) {
+func (q *Queries) GetGrocery(ctx context.Context, groceryID int64) (Grocery, error) {
 	row := q.db.QueryRow(ctx, getGrocery, groceryID)
 	var i Grocery
 	err := row.Scan(
 		&i.GroceryID,
-		&i.RecieptID,
+		&i.ReceiptID,
 		&i.ItemID,
 		&i.Quantity,
 		&i.PricePerQuantity,
@@ -333,26 +332,6 @@ func (q *Queries) GetItem(ctx context.Context, itemID int64) (Item, error) {
 		&i.ItemName,
 		&i.ItemCategory,
 		&i.ItemDescription,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getReciept = `-- name: GetReciept :one
-SELECT reciept_id, store_id, reciept_number, transaction_date, final_total, created_at, updated_at, deleted_at FROM reciepts WHERE reciept_id = $1
-`
-
-func (q *Queries) GetReciept(ctx context.Context, recieptID int64) (Reciept, error) {
-	row := q.db.QueryRow(ctx, getReciept, recieptID)
-	var i Reciept
-	err := row.Scan(
-		&i.RecieptID,
-		&i.StoreID,
-		&i.RecieptNumber,
-		&i.TransactionDate,
-		&i.FinalTotal,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -393,6 +372,26 @@ func (q *Queries) GetUser(ctx context.Context, userID int64) (User, error) {
 		&i.LastName,
 		&i.Username,
 		&i.Password,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getreceipt = `-- name: Getreceipt :one
+SELECT receipt_id, store_id, receipt_number, transaction_date, final_total, created_at, updated_at, deleted_at FROM receipts WHERE receipt_id = $1
+`
+
+func (q *Queries) Getreceipt(ctx context.Context, receiptID int64) (Receipt, error) {
+	row := q.db.QueryRow(ctx, getreceipt, receiptID)
+	var i Receipt
+	err := row.Scan(
+		&i.ReceiptID,
+		&i.StoreID,
+		&i.ReceiptNumber,
+		&i.TransactionDate,
+		&i.FinalTotal,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

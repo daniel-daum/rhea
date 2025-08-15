@@ -1,23 +1,27 @@
-test:
-	@go test ./internal
-
+# Runs the Go project in development mode
 run:
-	cd internal && dotenvx run -- air
+	cd backend && dotenvx run -- air
 
+# Runs the tests for the backend
+test:
+	cd backend && go test
+
+# Builds the go binary for the backend
 build:
-	@go build -C ./internal -o ../rhea
+	@go build -C ./backend -o ../rhea
 
-migrate-up name:
-    dotenvx run -- atlas migrate diff {{name}} --env local --dir file://internal/database/migrations
+# Generates the database migration file in the backend/database/migrations folder (supply <name>)
+migrate name:
+    cd backend && dotenvx run -- atlas migrate diff {{name}} --env local --dir file://database/migrations
 
-migrate-down:
-    dotenvx run -- atlas migrate down --env local --dir file://internal/database/migrations
+# Applies existing migrations to the database
+apply:
+    cd backend && dotenvx run -- atlas migrate apply --env local --dir file://database/migrations
 
-migrate-deploy:
-    dotenvx run -- atlas migrate apply --env local --dir file://internal/database/migrations
+# Removes all applied migrations to the development database
+destroy:
+    cd backend && dotenvx run -- atlas schema clean --env local
 
-migrate-clean:
-    dotenvx run -- atlas schema clean --env local
-
-generate-sqlc:
-    dotenvx run -- sqlc generate
+# Reads the database/query.sql file and generates typesafe Go code in the database/sqlc folder
+generate:
+    cd backend && dotenvx run -- sqlc generate

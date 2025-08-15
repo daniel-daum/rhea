@@ -7,7 +7,6 @@ package database
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -21,8 +20,8 @@ type Chain struct {
 }
 
 type Grocery struct {
-	GroceryID        uuid.UUID
-	RecieptID        int64
+	GroceryID        int64
+	ReceiptID        int64
 	ItemID           int64
 	Quantity         pgtype.Int4
 	PricePerQuantity pgtype.Numeric
@@ -48,10 +47,10 @@ type Item struct {
 	DeletedAt       *time.Time
 }
 
-type Reciept struct {
-	RecieptID       int64
+type Receipt struct {
+	ReceiptID       int64
 	StoreID         int64
-	RecieptNumber   int64
+	ReceiptNumber   int64
 	TransactionDate time.Time
 	FinalTotal      pgtype.Numeric
 	CreatedAt       time.Time
