@@ -39,7 +39,7 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 func Reference(w http.ResponseWriter, r *http.Request) {
 	htmlContent, err := scalar.ApiReferenceHTML(&scalar.Options{
-		SpecURL: "../api/swagger/swagger.yaml",
+		SpecURL: "./api/swagger/swagger.yaml",
 		CustomOptions: scalar.CustomOptions{
 			PageTitle: "Rhea API",
 		},
