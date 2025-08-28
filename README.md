@@ -1,34 +1,22 @@
 # Rhea
-Rhea is a project aimed at building a traditional REST API using the Go programming language. This project is designed for practice and learning purposes, and it incorporates various tools and libraries to facilitate development, database management, and environment configuration.
+Rhea is a web application that assists in analysis of grocery store pricing data. This tool is consists of a TypeScript React frontend, and a Go REST API backend. This project is just for fun and learning purposes.
 
-# Architecture
-I use net/http for route handling. Atlas for migrations, sqlc for queries, and postgres as my database. No real architecture patterns other than that.
+# Prerequisites
 
-# Running - Natively
-To run the rhea api, follow these steps:
+## Docker Setup (Recommended)
+- [Docker](https://www.docker.com/get-started) and Docker Compose
 
-1. **Clone the repository:**
-    ```sh
-    git clone https://github.com/daniel-daum/rhea.git
-    cd rhea
-    ```
+## Native/Local Development Setup
+- [Go 1.23+](https://golang.org/dl/)
+- [Node.js 18+](https://nodejs.org/) and npm
+- [PostgreSQL](https://www.postgresql.org/download/)
+- [dotenvx](https://dotenvx.com/docs/install) - Environment variable management
+- [Air](https://github.com/air-verse/air) - Go live reload: `go install github.com/air-verse/air@latest`
+- [Atlas](https://atlasgo.io/getting-started#installation) - Database migrations
+- [sqlc](https://sqlc.dev/) - SQL code generation: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
+- [Just](https://github.com/casey/just) - Command runner (optional, for using justfile)
 
-2. **Set up environment variables:**
-    Create a `.env` file in the root directory of the project and add the necessary environment variables. You can use the `.env.example` file as a reference.
-
-3. **Install dependencies:**
-    Ensure you have all the required tools installed (see the "Required Tools" section below). Then, install Go dependencies:
-    ```sh
-    go mod tidy
-    ```    
-    
-4. **Run the application:**
-    ```sh
-    go run main.go
-    ```
-  
-# Running - Docker
-To run via docker 
+# Running via Docker
 
 1. **Clone the repository:**
     ```sh
@@ -40,52 +28,10 @@ To run via docker
     ```sh
     docker compose up
     ```
+
+# Usage
+
+After running `docker compose up`, the application will be available at:
+- **Frontend**: http://localhost:3000 - React web interface for grocery pricing analysis
+- **Backend API**: http://localhost:8000 - Go REST API with endpoints at `/api`. For example: `/api/health` and `/api/docs`
     
-# Running - Justfile Commands
-The project includes a `justfile` to manage tasks and workflows. If you have just installed, here are the available commands and how to use them:
-
-1. **Run Tests:**
-    ```sh
-    just test
-    ```
-
-2. **Run the Application:**
-    ```sh
-    just run
-    ```
-
-3. **Build the Application:**
-    ```sh
-    just build
-    ```
-
-4. **Migrate Database Up:**
-    ```sh
-    just migrate-up name=<migration_name>
-    ```
-
-5. **Migrate Database Down:**
-    ```sh
-    just migrate-down
-    ```
-
-6. **Deploy Migrations:**
-    ```sh
-    just migrate-deploy
-    ```
-
-7. **Clean Database Schema:**
-    ```sh
-    just migrate-clean
-    ```
-
-# Development
-There are several tools used in this project:
-
-- **Go**: The primary programming language used for building the API. [golang homepage](https://go.dev)
-- **Justfile**: A tool for managing tasks and workflows. [the justfile GitHub page](https://github.com/casey/just)
-- **Dotenvx**: A library for managing environment variables. [dotenvx homepage](https://dotenvx.com)
-- **Sqlc**: A tool for generating SQL queries from Go code. [the Sqlc Github page](https://github.com/kyleconroy/sqlc)
-- **Atlas**: A tool for managing database migrations. [the Atlas GitHub page](https://github.com/ariga/atlas)
-- **Scalar**: An API reference generator/alternative to Swagger. [the Scalar GitHub page](https://github.com/scalar/scalar)
-
