@@ -1,5 +1,5 @@
 # Rhea
-Rhea is a web application that assists in the analysis of grocery store pricing data. This tool consists of a TypeScript React frontend and a Go REST API backend. This project is just for fun and learning purposes.
+Rhea is a web application consisting of a TypeScript React frontend and a Go REST API backend. This project is just for fun and learning purposes.
 
 # Prerequisites
 
