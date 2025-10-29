@@ -1,0 +1,20 @@
+
+
+
+.sidebar {
+    background-color: #181818;
+    color: white;
+    font-family: "geist mono";
+    width: 13em;
+    height: 100vh;
+    border: 1px solid #262626;
+    padding: 1em;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-title {
+    padding: .25em;
+    padding-left: 1em;
+    border-radius: 6px;
+}

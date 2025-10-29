@@ -1,0 +1,16 @@
+
+.sidebarButton{
+    padding: .25em;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: row;
+    padding-left: 1em;
+    padding-right: 1em;
+    margin-top: .25em;
+}
+
+
+.sidebarButton:hover {
+    background-color: #262626;
+    cursor: pointer;
+}
