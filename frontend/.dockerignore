@@ -42,8 +42,6 @@ coverage
 .nyc_output
 .coverage
 
-# Storybook
-storybook-static
 
 # Logs
 logs
