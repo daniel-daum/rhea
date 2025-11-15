@@ -13,6 +13,7 @@ const defaultEnv string = "local"
 const defaultPort string = "8000"
 const defaultDbUrl string = "postgres://postgres@localhost:5432/database?search_path=public&sslmode=disable"
 
+
 type Settings struct {
 	env  string
 	port string

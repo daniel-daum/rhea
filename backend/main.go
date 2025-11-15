@@ -11,7 +11,16 @@ func main() {
 
 	// Configuration
 	settings := ServerSettings()
-	rhea := Rhea(settings)
+
+	// Initialize database
+	queries, pool, err := InitDatabase(settings)
+	if err != nil {
+		slog.Error("Database initialization failed", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	rhea := Rhea(settings, queries)
 
 	// Start server
 	if err := StartServer(rhea); err != nil {

@@ -11,12 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createChain = `-- name: CreateChain :execlastid
-INSERT INTO chain (name) VALUES ($1)
+const createChain = `-- name: CreateChain :one
+INSERT INTO chain (name) VALUES ($1) RETURNING id
 `
 
-const createItem = `-- name: CreateItem :execlastid
-INSERT INTO item (chain_id, store_id, category, code, name) VALUES ($1, $2, $3, $4, $5)
+// chain
+func (q *Queries) CreateChain(ctx context.Context, name string) (int64, error) {
+	row := q.db.QueryRow(ctx, createChain, name)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createItem = `-- name: CreateItem :one
+INSERT INTO item (chain_id, store_id, category, code, name) VALUES ($1, $2, $3, $4, $5) returning id
 `
 
 type CreateItemParams struct {
@@ -27,10 +35,24 @@ type CreateItemParams struct {
 	Name     string
 }
 
-const createPurchase = `-- name: CreatePurchase :execlastid
+// item
+func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createItem,
+		arg.ChainID,
+		arg.StoreID,
+		arg.Category,
+		arg.Code,
+		arg.Name,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createPurchase = `-- name: CreatePurchase :one
 INSERT INTO purchases 
     (day, chain_id, store_id, receipt_id, item_id, quantity_units, price_per_unit, weight_pounds, price_per_lb, price, sale, paid) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING day
 `
 
 type CreatePurchaseParams struct {
@@ -48,8 +70,29 @@ type CreatePurchaseParams struct {
 	Paid          pgtype.Numeric
 }
 
-const createReceipt = `-- name: CreateReceipt :execlastid
-INSERT INTO receipt (id, receipt_number) VALUES ($1, $2)
+// purchases
+func (q *Queries) CreatePurchase(ctx context.Context, arg CreatePurchaseParams) (pgtype.Date, error) {
+	row := q.db.QueryRow(ctx, createPurchase,
+		arg.Day,
+		arg.ChainID,
+		arg.StoreID,
+		arg.ReceiptID,
+		arg.ItemID,
+		arg.QuantityUnits,
+		arg.PricePerUnit,
+		arg.WeightPounds,
+		arg.PricePerLb,
+		arg.Price,
+		arg.Sale,
+		arg.Paid,
+	)
+	var day pgtype.Date
+	err := row.Scan(&day)
+	return day, err
+}
+
+const createReceipt = `-- name: CreateReceipt :one
+INSERT INTO receipt (id, receipt_number) VALUES ($1, $2) RETURNING id
 `
 
 type CreateReceiptParams struct {
@@ -57,14 +100,30 @@ type CreateReceiptParams struct {
 	ReceiptNumber int64
 }
 
-const createStore = `-- name: CreateStore :execlastid
-INSERT INTO store (chain_id, store_number, street_address) VALUES ($1, $2, $3)
+// receipt
+func (q *Queries) CreateReceipt(ctx context.Context, arg CreateReceiptParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createReceipt, arg.ID, arg.ReceiptNumber)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const createStore = `-- name: CreateStore :one
+INSERT INTO store (chain_id, store_number, street_address) VALUES ($1, $2, $3) RETURNING id
 `
 
 type CreateStoreParams struct {
 	ChainID       int64
 	StoreNumber   int32
 	StreetAddress string
+}
+
+// store
+func (q *Queries) CreateStore(ctx context.Context, arg CreateStoreParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createStore, arg.ChainID, arg.StoreNumber, arg.StreetAddress)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteChain = `-- name: DeleteChain :exec

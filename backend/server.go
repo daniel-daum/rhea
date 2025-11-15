@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	database "github.com/daniel-daum/rhea/database/sqlc"
 )
 
 type responseWriter struct {
@@ -46,13 +48,15 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func Rhea(settings *Settings) *http.Server {
+func Rhea(settings *Settings, queries *database.Queries) *http.Server {
 
 	router := http.NewServeMux()
 
 	// Add routes here
-	router.HandleFunc("POST /api/chain", CreateChain)
-	// 
+	router.HandleFunc("POST /api/chain", func(w http.ResponseWriter, r *http.Request) {
+		CreateChain(w, r, queries)
+	})
+	//
 	router.HandleFunc("GET /api/health", HealthCheck)
 	router.HandleFunc("GET /api/docs", Reference)
 
