@@ -9,7 +9,6 @@ import (
 	"github.com/MarceloPetrucio/go-scalar-api-reference"
 )
 
-
 type HealthResponse struct {
 	Status string `json:"status" example:"healthy"`
 }
@@ -22,6 +21,22 @@ func ErrorLog(err error, r *http.Request) {
 		"url", r.URL.RequestURI(),
 		"agent", r.UserAgent(),
 	)
+}
+
+type createChainResponse struct {
+	Status string `json:"status" example:"healthy"`
+}
+
+func CreateChain(w http.ResponseWriter, r *http.Request) {
+	createChainResponse := createChainResponse{Status: "recieved"}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err := json.NewEncoder(w).Encode(createChainResponse)
+
+	if err != nil {
+		ErrorLog(err, r)
+	}
 }
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {

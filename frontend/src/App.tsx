@@ -1,15 +1,19 @@
 import { useState } from "react";
+import "./App.css";
 
 import Sidebar from "./components/sidebar/sidebar/Sidebar";
 import GroceryView from "./components/views/GroceryView";
 import ReceiptView from "./components/views/RecieptView";
 import StoreView from "./components/views/StoreView";
+import ChainView from "./components/views/ChainView";
 
 function App() {
   const [activeView, setActiveView] = useState("Store");
 
   const renderView = () => {
     switch (activeView) {
+      case "Chain":
+        return <ChainView />;
       case "Store":
         return <StoreView />;
       case "Reciept":
@@ -17,16 +21,14 @@ function App() {
       case "Groceries":
         return <GroceryView />;
       default:
-        return <StoreView />;
+        return <ChainView />;
     }
   };
 
   return (
-    <div style={{ display: "flex" }}>
+    <div className="app-sidebar">
       <Sidebar onViewChange={setActiveView}></Sidebar>
-      <div style={{ flex: 1, padding: "2em" }}>
-        {renderView()}
-      </div>
+      <div className="app-main">{renderView()}</div>
     </div>
   );
 }

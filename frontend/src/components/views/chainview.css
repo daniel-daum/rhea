@@ -1,0 +1,72 @@
+.chainview {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.crud-section {
+  border: 1px solid #ddd;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.crud-section h3 {
+  margin-top: 0;
+}
+
+.crud-section label {
+  margin-right: 0.5rem;
+}
+
+.crud-section input,
+.crud-section select {
+  margin-right: 0.5rem;
+  padding: 0.25rem;
+}
+
+.crud-section button {
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+
+.crud-section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.crud-section th,
+.crud-section td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.crud-section th {
+  background-color: #f5f5f5;
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
+.toast {
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  min-width: 200px;
+}
+
+.toast-success {
+  background-color: #4caf50;
+}
+
+.toast-error {
+  background-color: #f44336;
+}

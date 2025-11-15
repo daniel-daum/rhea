@@ -51,6 +51,8 @@ func Rhea(settings *Settings) *http.Server {
 	router := http.NewServeMux()
 
 	// Add routes here
+	router.HandleFunc("POST /api/chain", CreateChain)
+	// 
 	router.HandleFunc("GET /api/health", HealthCheck)
 	router.HandleFunc("GET /api/docs", Reference)
 
