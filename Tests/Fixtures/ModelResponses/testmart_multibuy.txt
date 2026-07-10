@@ -1,0 +1,63 @@
+Here is the extracted receipt data:
+
+{
+  "merchant": "TESTMART #4021",
+  "chain": "TESTMART",
+  "storeNumber": "4021",
+  "storeAddress": "123 Fixture Ave, Sampleton CA",
+  "date": "2026-03-14T17:41:00Z",
+  "receiptNumber": "TM-889201",
+  "total": "11.65",
+  "tax": "0.86",
+  "paymentMethod": "Mastercard ****9021",
+  "overallConfidence": 0.97,
+  "lineItems": [
+    {
+      "name": "TM COLA 2L",
+      "commonName": "cola",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 3,
+      "unitPrice": "1.50",
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": "4.50",
+      "pricePaid": "4.50",
+      "lineTotal": "4.50",
+      "confidence": 0.97
+    },
+    {
+      "name": "TM CHIPS PARTY SIZE",
+      "commonName": "chips",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 2,
+      "unitPrice": "2.50",
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": "$5.00",
+      "pricePaid": "$5.00",
+      "lineTotal": "$5.00",
+      "confidence": 0.97
+    },
+    {
+      "name": "TM SPARKLING WATER",
+      "commonName": "sparkling water",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 1,
+      "unitPrice": 1.29,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": 1.29,
+      "pricePaid": 1.29,
+      "lineTotal": 1.29,
+      "confidence": 0.97
+    }
+  ]
+}
+
+Let me know if you need anything else.
