@@ -279,5 +279,9 @@ jobs:
           git rm -rf . > /dev/null 2>&1 || true
           cp "$RUNNER_TEMP/appcast.xml" appcast.xml
           git add appcast.xml
-          git commit -m "chore: publish appcast.xml for ${{ steps.version.outputs.tag }}"
+          # This runner's user account has commit/tag signing enabled (via Secretive), which
+          # only works interactively — it isn't a human-authored commit, just a mechanism to
+          # publish a generated file at a stable URL, so skip signing for it specifically
+          # rather than disabling signing globally.
+          git commit --no-gpg-sign -m "chore: publish appcast.xml for ${{ steps.version.outputs.tag }}"
           git push "$AUTH_URL" HEAD:appcast-feed --force
