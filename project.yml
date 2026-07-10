@@ -51,12 +51,16 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Tests/RheaUITests
+      - path: Tests/Fixtures
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.danieldaum.rhea.uitests
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
+        # Xcode's generated XCTRunner host app is sandboxed with network.client only;
+        # the in-process StubExtractionServer needs network.server to listen on loopback.
+        CODE_SIGN_ENTITLEMENTS: Tests/RheaUITests/RheaUITests.entitlements
     dependencies:
       - target: Rhea
 schemes:

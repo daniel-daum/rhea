@@ -282,8 +282,8 @@ struct ReceiptEditForm: View {
                     .padding(.vertical, 6)
             } else {
                 VStack(spacing: 0) {
-                    ForEach($lineItems) { $item in
-                        lineItemRow(item: $item)
+                    ForEach(Array($lineItems.enumerated()), id: \.element.id) { index, $item in
+                        lineItemRow(item: $item, index: index)
                         if item.id != lineItems.last?.id {
                             Divider().opacity(0.4)
                         }
@@ -302,7 +302,7 @@ struct ReceiptEditForm: View {
         }
     }
 
-    private func lineItemRow(item: Binding<EditableLineItem>) -> some View {
+    private func lineItemRow(item: Binding<EditableLineItem>, index: Int) -> some View {
         HStack(alignment: .top, spacing: 14) {
             // LEFT — identity (flexible width)
             VStack(alignment: .leading, spacing: 4) {
@@ -345,7 +345,7 @@ struct ReceiptEditForm: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // RIGHT — pricing math (fixed columns, shared right edge)
-            pricingColumn(item: item)
+            pricingColumn(item: item, index: index)
 
             // Delete (only while editing; every editing row matches, so columns still align)
             if !isReadOnly {
@@ -427,7 +427,7 @@ struct ReceiptEditForm: View {
     }
 
     /// Right-side pricing math: total (primary), qty × ea (fixed cols), struck original.
-    private func pricingColumn(item: Binding<EditableLineItem>) -> some View {
+    private func pricingColumn(item: Binding<EditableLineItem>, index: Int) -> some View {
         let v = item.wrappedValue
         let isWeight   = !v.weightLbs.isEmpty || !v.pricePerLb.isEmpty
         let discounted = !v.listPrice.isEmpty && v.listPrice != v.pricePaid
@@ -440,6 +440,7 @@ struct ReceiptEditForm: View {
                 .foregroundStyle(.primary)
                 .frame(width: priceW, alignment: .trailing)
                 .disabled(isReadOnly)
+                .accessibilityIdentifier("line-item-price-\(index)")
 
             // qty × ea  (or  wt @ /lb) — fixed sub-columns
             HStack(spacing: 0) {
@@ -547,6 +548,7 @@ struct ReceiptEditForm: View {
                         .buttonStyle(.borderedProminent)
                         .tint(.green)
                         .keyboardShortcut(.return, modifiers: .command)
+                        .accessibilityIdentifier("confirm-button")
                 }
                 HStack(spacing: 5) {
                     Image(systemName: "keyboard")
