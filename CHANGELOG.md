@@ -4,6 +4,15 @@ All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is pre-1.0, so breaking
 changes may land in minor releases.
 
+## [0.2.0] - 2026-07-10
+
+### Added
+- Tag-triggered release pipeline (`.gitea/workflows/release.yml`): builds a Release
+  configuration signed with a real Developer ID Application certificate, notarizes and
+  staples the resulting `.dmg`, publishes it as a Gitea release with release notes
+  pulled from this changelog, and generates + EdDSA-signs an `appcast.xml` (Sparkle
+  isn't wired into the app yet, so this is release-side prep only).
+
 ## [0.1.0] - 2026-07-09
 
 Initial release.

@@ -23,13 +23,20 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
-        # Ad-hoc "sign to run locally" so it builds without an Apple team.
-        # For distribution, set your Developer ID + DEVELOPMENT_TEAM and notarize.
         CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
         INFOPLIST_KEY_CFBundleDisplayName: Rhea
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Daniel Daum"
+      configs:
+        Debug:
+          # Ad-hoc "sign to run locally" so local/CI builds work without a team.
+          CODE_SIGN_IDENTITY: "-"
+        Release:
+          # Real Developer ID signing for distributable (notarized) builds; see
+          # .gitea/workflows/release.yml, which imports the cert into a temporary
+          # runner keychain before invoking a Release build.
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          DEVELOPMENT_TEAM: V4A23659NX
   RheaTests:
     type: bundle.unit-test
     platform: macOS
