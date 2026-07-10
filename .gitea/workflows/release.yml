@@ -91,7 +91,21 @@ jobs:
           rm -f "$KEY_PATH"
 
       - name: Staple notarization ticket
-        run: xcrun stapler staple "$dmg_path"
+        run: |
+          # notarytool --wait reports success as soon as Apple's notary service
+          # finishes, but the ticket can take a little longer to propagate through
+          # Apple's CloudKit-backed distribution — stapling immediately after can
+          # transiently fail with "CloudKit query ... Record not found". Retry with
+          # backoff rather than failing the whole release on a race condition.
+          for attempt in 1 2 3 4 5; do
+            if xcrun stapler staple "$dmg_path"; then
+              exit 0
+            fi
+            echo "staple attempt $attempt failed, retrying in 30s..."
+            sleep 30
+          done
+          echo "stapling failed after all retries"
+          exit 1
 
       - name: Verify Gatekeeper acceptance
         run: |
