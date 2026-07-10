@@ -31,14 +31,15 @@ class ReceiptsViewModel {
     var exportStatus:  ExportStatus? = nil
     var csvExportURL:  URL?          = nil
 
-    // Durable on-disk store (Application Support). Source of truth across launches.
-    private let store = LocalStore()
+    // Durable on-disk store (Application Support by default). Source of truth across launches.
+    private let store: LocalStore
 
     /// Guards the sequential queue drain so only one extraction runs at a time.
     private var isProcessing = false
 
-    init(receipts: [Receipt] = []) {
+    init(receipts: [Receipt] = [], store: LocalStore = LocalStore()) {
         self.receipts        = receipts
+        self.store           = store
         self.selectedReceipt = receipts.first { $0.status == .queued || $0.status == .inProgress }
     }
 

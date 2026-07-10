@@ -21,13 +21,18 @@ actor LocalStore: PersistenceStore {
             appropriateFor: nil, create: true
         )) ?? URL.applicationSupportDirectory
 
-        let root = base.appending(path: "Rhea", directoryHint: .isDirectory)
-        self.rootURL          = root
-        self.storeDescription = root.path(percentEncoded: false)
+        self.init(rootURL: base.appending(path: "Rhea", directoryHint: .isDirectory))
+    }
+
+    /// Test seam: points the vault at an arbitrary directory (e.g. a temp dir) instead of
+    /// the real Application Support location.
+    init(rootURL: URL) {
+        self.rootURL          = rootURL
+        self.storeDescription = rootURL.path(percentEncoded: false)
 
         // Best-effort directory creation; individual writes also ensure their parent exists.
-        try? FileManager.default.createDirectory(at: root.appending(path: "Store"), withIntermediateDirectories: true)
-        try? FileManager.default.createDirectory(at: root.appending(path: "Files"), withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: rootURL.appending(path: "Store"), withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: rootURL.appending(path: "Files"), withIntermediateDirectories: true)
     }
 
     // MARK: - On-disk locations
