@@ -77,6 +77,11 @@ jobs:
           cp -R "$APP_PATH" "$STAGING_DIR/"
           ln -s /Applications "$STAGING_DIR/Applications"
           hdiutil create -volname "Rhea" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_NAME"
+          # Gatekeeper assesses the disk image's own signature, not just the app
+          # inside it — an unsigned dmg is rejected with "no usable signature"
+          # even when its contents are signed and notarized.
+          codesign --sign "Developer ID Application" --timestamp \
+            --keychain "$keychain_path" "$DMG_NAME"
           echo "dmg_path=$DMG_NAME" >> "$GITHUB_ENV"
 
       - name: Notarize dmg
