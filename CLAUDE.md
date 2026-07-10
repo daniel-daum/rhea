@@ -162,6 +162,26 @@ Only confirmed receipts with extracted data are exported.
 13. **Renamed ReceiptVault → Rhea** across package, sources, app struct, display strings, and storage paths.
 14. **Converted to a real Xcode macOS App** (XcodeGen `project.yml`), with a generated app icon and bundle id
     `net.danieldaum.rhea`, so it builds/archives as a distributable `.app`/`.dmg`.
+15. **Schema v2 for cross-retailer analysis** (authoritative DDL in `db/schema.sql`; loader in
+    `db/load_baseline.sh`): `purchase_date DATE` (was TEXT), UNIQUE `receipt_key` with upserts keyed on it
+    (prevents baseline + Rhea double-inserts), line items get `line_no`/`item_code`/`raw_name` (was
+    name/item_key/barcode), new `line_type` (`item`/`deposit`/`fee`/`refund`/`discount`/`non_grocery`) to keep
+    deposits/fees out of price stats, generated columns `effective_unit` + `effective_unit_price` normalizing
+    per-lb vs per-each pricing, a `products` dimension (canonical `common_name` vocabulary), and analysis views
+    (`v_prices`, `v_price_comparison`, `v_price_history`, `v_monthly_spend`, `v_receipt_qc`).
+    `LineItem` gained `lineType` (lenient-decoded; `effectiveLineType` defaults to "item"); the extraction
+    prompt demands weight lines be extracted (never default by-weight items to qty 1) and classifies lineType.
+    Both Postgres paths (`PostgresStore`, `PostgresSQLExporter`) now emit ALL columns (the old exporter dropped
+    common names/weights). Old prototype databases must be dropped — v2 is not migration-compatible.
+16. **Prompt hardening from the 146-receipt baseline run** (`ExtractionService`): weight/qty modifier
+    lines can print above OR below their item (attach by weight×rate arithmetic); savings lines are
+    attributed by Price/You-Pay arithmetic, not adjacency; multi-buy deals use average unit price;
+    voided lines become negative `refund` lines; mandatory self-check that line items (+tax) sum to the
+    printed total before answering; `commonName` convention aligned with the DB products vocabulary
+    (lowercase, 1-4 words, brand-free, keep organic/fat/boneless qualifiers). Chain examples now include
+    GROCERY OUTLET and PIEDMONT GROCERY. The baseline dataset/pipeline lives in `receipts_raw/`
+    (extraction spec, per-receipt JSONs, `qc.py`, `assemble.py`, `products_map.csv`) and loads via
+    `db/baseline_full.sql` or `db/load_baseline.sh`; analysis queries in `db/analysis_queries.sql`.
 
 ## Working agreement
 - Keep the build green (`xcodebuild ... build`) after each change; run `xcodegen generate` after editing `project.yml`.

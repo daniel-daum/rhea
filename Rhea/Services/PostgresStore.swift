@@ -59,60 +59,75 @@ enum PostgresStore {
 
     // MARK: - SQL generation
 
+    // Kept in sync with db/schema.sql (authoritative; also defines analysis views).
+    // NOTE (v2): the schema changed incompatibly (purchase_date DATE, raw_name, line_type,
+    // generated columns). Databases created by the old prototype should be dropped and
+    // recreated — the dataset is being rebuilt from scratch anyway.
     private static let createTablesSQL = """
-    CREATE TABLE IF NOT EXISTS receipts (
-        id                  UUID PRIMARY KEY,
-        receipt_key         TEXT,
-        merchant            TEXT NOT NULL,
-        chain               TEXT,
-        store_number        TEXT,
-        store_address       TEXT,
-        date                TEXT NOT NULL,
-        receipt_number      TEXT,
-        total               NUMERIC(10,2) NOT NULL,
-        tax                 NUMERIC(10,2),
-        payment_method      TEXT,
-        overall_confidence  NUMERIC(4,3),
-        confirmed           BOOLEAN DEFAULT FALSE,
-        source_file         TEXT,
-        created_at          TIMESTAMPTZ DEFAULT NOW()
+    CREATE TABLE IF NOT EXISTS products (
+        id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        common_name  TEXT NOT NULL UNIQUE,
+        category     TEXT,
+        is_organic   BOOLEAN NOT NULL DEFAULT FALSE,
+        default_unit TEXT CHECK (default_unit IN ('lb','each')),
+        notes        TEXT,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS receipts (
+        id              UUID PRIMARY KEY,
+        receipt_key     TEXT NOT NULL UNIQUE,
+        merchant        TEXT NOT NULL,
+        chain           TEXT,
+        store_number    TEXT,
+        store_address   TEXT,
+        purchase_date   DATE NOT NULL,
+        purchased_at    TIMESTAMPTZ,
+        receipt_number  TEXT,
+        total           NUMERIC(10,2) NOT NULL,
+        tax             NUMERIC(10,2),
+        payment_method  TEXT,
+        confirmed       BOOLEAN NOT NULL DEFAULT FALSE,
+        source          TEXT NOT NULL DEFAULT 'rhea'
+                        CHECK (source IN ('baseline','rhea','manual')),
+        source_file     TEXT,
+        overall_confidence NUMERIC(3,2),
+        created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_receipts_chain_date ON receipts (chain, purchase_date);
     CREATE TABLE IF NOT EXISTS receipt_line_items (
         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        receipt_id      UUID REFERENCES receipts(id) ON DELETE CASCADE,
-        item_key        TEXT,
-        name            TEXT NOT NULL,
+        receipt_id      UUID NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
+        line_no         INT  NOT NULL,
+        item_code       TEXT,
+        raw_name        TEXT NOT NULL,
         ai_common_name  TEXT,
         common_name     TEXT,
+        product_id      BIGINT REFERENCES products(id),
         category        TEXT,
-        barcode         TEXT,
+        line_type       TEXT NOT NULL DEFAULT 'item'
+                        CHECK (line_type IN ('item','deposit','fee','refund','discount','non_grocery')),
         quantity        NUMERIC(10,3),
         unit_price      NUMERIC(10,4),
         weight_lbs      NUMERIC(10,4),
         price_per_lb    NUMERIC(10,4),
         list_price      NUMERIC(10,2),
         price_paid      NUMERIC(10,2),
-        line_total      NUMERIC(10,2),
-        confidence      NUMERIC(4,3)
+        item_confidence NUMERIC(3,2),
+        effective_unit  TEXT GENERATED ALWAYS AS (
+            CASE WHEN weight_lbs IS NOT NULL AND weight_lbs > 0 THEN 'lb' ELSE 'each' END
+        ) STORED,
+        effective_unit_price NUMERIC(12,4) GENERATED ALWAYS AS (
+            CASE
+                WHEN weight_lbs IS NOT NULL AND weight_lbs > 0 THEN price_paid / weight_lbs
+                WHEN quantity   IS NOT NULL AND quantity   > 0 THEN price_paid / quantity
+                ELSE price_paid
+            END
+        ) STORED,
+        UNIQUE (receipt_id, line_no)
     );
-    -- Add new columns to receipts if upgrading from earlier schema
-    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS receipt_key TEXT;
-    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS chain TEXT;
-    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS store_number TEXT;
-    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS store_address TEXT;
-    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS receipt_number TEXT;
-    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS overall_confidence NUMERIC(4,3);
-    -- Add new columns to receipt_line_items if upgrading
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS item_key TEXT;
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS ai_common_name TEXT;
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS common_name TEXT;
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS category TEXT;
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS barcode TEXT;
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS weight_lbs NUMERIC(10,4);
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS price_per_lb NUMERIC(10,4);
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS list_price NUMERIC(10,2);
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS price_paid NUMERIC(10,2);
-    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS confidence NUMERIC(4,3);
+    CREATE INDEX IF NOT EXISTS idx_li_common_name ON receipt_line_items (common_name);
+    CREATE INDEX IF NOT EXISTS idx_li_receipt     ON receipt_line_items (receipt_id);
     """
 
     private static func makeInsertSQL(_ r: Receipt) -> String {
@@ -120,39 +135,40 @@ enum PostgresStore {
         let id  = r.id.uuidString
         let receiptKey = r.naturalKey
 
-        let overallConf = e.overallConfidence.map { String(format: "%.3f", $0) } ?? "NULL"
+        let overallConf = e.overallConfidence.map { String(format: "%.2f", $0) } ?? "NULL"
+        let date = String(e.date.prefix(10))                    // YYYY-MM-DD
+        let ts   = e.date.count > 10 ? s(e.date) : "NULL"       // full timestamp if present
         let sql_receipt = """
-        INSERT INTO receipts (id,receipt_key,merchant,chain,store_number,store_address,date,receipt_number,total,tax,payment_method,overall_confidence,confirmed,source_file)
-        VALUES (\(s(id)),\(s(receiptKey)),\(s(e.merchant)),\(n(e.chain)),\(n(e.storeNumber)),\(n(e.storeAddress)),\(s(e.date)),\(n(e.receiptNumber)),\(fmt(e.total)),\(e.tax.map { fmt($0) } ?? "NULL"),\(n(e.paymentMethod)),\(overallConf),\(r.confirmed ? "TRUE" : "FALSE"),\(s(r.sourceURL.lastPathComponent)))
-        ON CONFLICT (id) DO UPDATE SET
-          receipt_key=EXCLUDED.receipt_key,merchant=EXCLUDED.merchant,chain=EXCLUDED.chain,store_number=EXCLUDED.store_number,
-          store_address=EXCLUDED.store_address,date=EXCLUDED.date,receipt_number=EXCLUDED.receipt_number,
-          total=EXCLUDED.total,tax=EXCLUDED.tax,payment_method=EXCLUDED.payment_method,
-          overall_confidence=EXCLUDED.overall_confidence,confirmed=EXCLUDED.confirmed;
-        DELETE FROM receipt_line_items WHERE receipt_id=\(s(id));
+        INSERT INTO receipts (id,receipt_key,merchant,chain,store_number,store_address,purchase_date,purchased_at,receipt_number,total,tax,payment_method,confirmed,source,source_file,overall_confidence)
+        VALUES (\(s(id)),\(s(receiptKey)),\(s(e.merchant)),\(n(e.chain)),\(n(e.storeNumber)),\(n(e.storeAddress)),\(s(date)),\(ts),\(n(e.receiptNumber)),\(fmt(e.total)),\(e.tax.map { fmt($0) } ?? "NULL"),\(n(e.paymentMethod)),\(r.confirmed ? "TRUE" : "FALSE"),'rhea',\(s(r.sourceURL.lastPathComponent)),\(overallConf))
+        ON CONFLICT (receipt_key) DO UPDATE SET
+          merchant=EXCLUDED.merchant,chain=EXCLUDED.chain,store_number=EXCLUDED.store_number,
+          store_address=EXCLUDED.store_address,purchase_date=EXCLUDED.purchase_date,purchased_at=EXCLUDED.purchased_at,
+          receipt_number=EXCLUDED.receipt_number,total=EXCLUDED.total,tax=EXCLUDED.tax,
+          payment_method=EXCLUDED.payment_method,confirmed=EXCLUDED.confirmed,
+          source_file=EXCLUDED.source_file,overall_confidence=EXCLUDED.overall_confidence,updated_at=now();
+        DELETE FROM receipt_line_items WHERE receipt_id=(SELECT id FROM receipts WHERE receipt_key=\(s(receiptKey)));
         """
 
         guard !e.lineItems.isEmpty else { return sql_receipt }
 
         let rows = e.lineItems.enumerated().map { (index, item) -> String in
             let effectivePaid = item.pricePaid ?? item.lineTotal
-            let itemKey = item.stableKey(receiptKey: receiptKey, index: index)
-            let itemConf = item.confidence.map { String(format: "%.3f", $0) } ?? "NULL"
+            let itemConf = item.confidence.map { String(format: "%.2f", $0) } ?? "NULL"
             return """
-            (\(s(id)),\(s(itemKey)),\(s(item.name)),\(n(item.aiCommonName)),\(n(item.userCommonName)),\(n(item.category)),\(n(item.barcode)),\
+            ((SELECT id FROM receipts WHERE receipt_key=\(s(receiptKey))),\(index + 1),\(n(item.barcode)),\(s(item.name)),\(n(item.aiCommonName)),\(n(item.userCommonName)),\(n(item.category)),\(s(item.effectiveLineType)),\
             \(item.quantity.map   { fmt($0, d: 3) } ?? "NULL"),\
             \(item.unitPrice.map  { fmt($0, d: 4) } ?? "NULL"),\
             \(item.weightLbs.map  { fmt($0, d: 4) } ?? "NULL"),\
             \(item.pricePerLb.map { fmt($0, d: 4) } ?? "NULL"),\
             \(item.listPrice.map  { fmt($0) }       ?? "NULL"),\
             \(effectivePaid.map   { fmt($0) }       ?? "NULL"),\
-            \(item.lineTotal.map  { fmt($0) }       ?? "NULL"),\
             \(itemConf))
             """
         }.joined(separator: ",\n")
 
         return sql_receipt + """
-        INSERT INTO receipt_line_items(receipt_id,item_key,name,ai_common_name,common_name,category,barcode,quantity,unit_price,weight_lbs,price_per_lb,list_price,price_paid,line_total,confidence)
+        INSERT INTO receipt_line_items(receipt_id,line_no,item_code,raw_name,ai_common_name,common_name,category,line_type,quantity,unit_price,weight_lbs,price_per_lb,list_price,price_paid,item_confidence)
         VALUES \(rows);
         """
     }

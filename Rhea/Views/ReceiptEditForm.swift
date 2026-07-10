@@ -22,6 +22,8 @@ private struct EditableLineItem: Identifiable {
     var pricePaid:  String
     // Model confidence for this item (read-only, passed through on save)
     var confidence: Double?
+    // Line classification (item/deposit/fee/refund/discount/non_grocery), passed through on save
+    var lineType:   String?
 
     init(name: String) {
         self.name           = name
@@ -36,6 +38,7 @@ private struct EditableLineItem: Identifiable {
         self.listPrice  = ""
         self.pricePaid  = ""
         self.confidence = nil
+        self.lineType   = nil
     }
 
     init(from item: LineItem) {
@@ -52,6 +55,7 @@ private struct EditableLineItem: Identifiable {
         self.listPrice  = item.listPrice.map  { "\($0)" } ?? ""
         self.pricePaid  = (item.pricePaid ?? item.lineTotal).map { "\($0)" } ?? ""
         self.confidence = item.confidence
+        self.lineType   = item.lineType
     }
 
     func toLineItem() -> LineItem {
@@ -70,7 +74,8 @@ private struct EditableLineItem: Identifiable {
             listPrice:  list,
             pricePaid:  paid,
             lineTotal:  paid ?? Decimal(string: pricePaid),
-            confidence: confidence
+            confidence: confidence,
+            lineType:   lineType
         )
     }
 }

@@ -39,6 +39,10 @@ public struct LineItem: Codable, Equatable, Hashable {
     // Model's confidence in this line item extraction (0.0–1.0); nil when unavailable
     public let  confidence:  Double?
 
+    // Line classification: item, deposit, fee, refund, discount, non_grocery.
+    // Keeps deposits/fees/refunds out of price analysis. nil is treated as "item".
+    public var  lineType:    String?
+
     public init(
         name:           String,
         aiCommonName:   String?  = nil,
@@ -52,7 +56,8 @@ public struct LineItem: Codable, Equatable, Hashable {
         listPrice:  Decimal? = nil,
         pricePaid:  Decimal? = nil,
         lineTotal:  Decimal? = nil,
-        confidence: Double?  = nil
+        confidence: Double?  = nil,
+        lineType:   String?  = nil
     ) {
         self.name           = name
         self.aiCommonName   = aiCommonName
@@ -67,12 +72,13 @@ public struct LineItem: Codable, Equatable, Hashable {
         self.pricePaid  = pricePaid
         self.lineTotal  = lineTotal
         self.confidence = confidence
+        self.lineType   = lineType
     }
 
     enum CodingKeys: String, CodingKey {
         case name, aiCommonName, userCommonName, category, barcode
         case quantity, unitPrice, weightLbs, pricePerLb
-        case listPrice, pricePaid, lineTotal, confidence
+        case listPrice, pricePaid, lineTotal, confidence, lineType
     }
 
     // The vision model emits "commonName"; older saved records used it too.
@@ -99,6 +105,14 @@ public struct LineItem: Codable, Equatable, Hashable {
         self.pricePaid  = c.lenientDecimal(.pricePaid)
         self.lineTotal  = c.lenientDecimal(.lineTotal)
         self.confidence = try? c.decode(Double.self, forKey: .confidence)
+        self.lineType   = c.lenientString(.lineType)
+    }
+
+    // Normalized line type — defaults unknown/absent values to "item".
+    public var effectiveLineType: String {
+        let allowed = ["item", "deposit", "fee", "refund", "discount", "non_grocery"]
+        guard let t = lineType?.lowercased(), allowed.contains(t) else { return "item" }
+        return t
     }
 
     // Effective price paid — use pricePaid if present, fallback to lineTotal

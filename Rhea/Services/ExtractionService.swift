@@ -121,7 +121,7 @@ enum ExtractionService {
 
     {
       "merchant": "Store name as printed",
-      "chain": "Brand only (e.g. SAFEWAY, TRADER JOES, WHOLE FOODS, COSTCO, TARGET)",
+      "chain": "Brand only (e.g. SAFEWAY, TRADER JOES, WHOLE FOODS, COSTCO, GROCERY OUTLET, PIEDMONT GROCERY)",
       "storeNumber": "Store/location number if visible, else null",
       "storeAddress": "Store street address if visible, else null",
       "date": "2024-01-15T00:00:00Z",
@@ -136,6 +136,7 @@ enum ExtractionService {
           "commonName": "Short consumer-friendly name for cross-store comparison",
           "category": "Department as printed (PRODUCE, GROCERY, MEAT, DELI, REFRIG/FROZEN, BAKED GOODS, LIQUOR, GROC NONEDIBLE, etc.)",
           "barcode": "UPC or PLU code if shown, else null",
+          "lineType": "item",
           "quantity": 2,
           "unitPrice": 2.49,
           "weightLbs": null,
@@ -151,11 +152,30 @@ enum ExtractionService {
     RULES — follow exactly:
     - date: ISO-8601 format YYYY-MM-DDTHH:MM:SSZ; use T00:00:00Z when time is not shown
     - All price/quantity values are JSON numbers, NEVER strings
-    - commonName: concise, store-neutral name a shopper would use to compare across stores \
-    (e.g. "Organic Broccoli" not "SIG FARMS BROCCOLI"; "Kona Coffee Blend" not "SIG COFFEE KONA BL"). \
-    Aim for 2-5 words. Include organic/free-range/etc if relevant.
+    - commonName: concise, store-neutral, LOWERCASE name a shopper would use to compare across \
+    stores, 1-4 words, plural where natural, no brand unless the brand IS the product \
+    (e.g. "organic broccoli" not "SIG FARMS BROCCOLI"; "kona coffee" not "SIG COFFEE KONA BL"). \
+    Keep qualifiers that change the price: organic, nonfat/whole, boneless. Drop sizes and \
+    marketing words.
     - For BY-UNIT items: set quantity + unitPrice; set weightLbs and pricePerLb to null
-    - For BY-WEIGHT items: set weightLbs + pricePerLb; set quantity and unitPrice to null
+    - For BY-WEIGHT items: set weightLbs + pricePerLb; set quantity and unitPrice to null. \
+    LOOK CAREFULLY for weight lines — e.g. "2.44 lb @ $0.99/lb", "0.83 lb @ 1.99 /lb", "WT 1.55 lb". \
+    They usually print under the item, but on some stores' receipts the weight/qty modifier prints \
+    ABOVE the item it belongs to — attach it to whichever adjacent item makes the math work \
+    (weight × rate = that item's price). Produce, meat, and bulk items are usually sold by weight. \
+    NEVER default a by-weight item to quantity 1 — if a weight is printed, you MUST extract \
+    weightLbs and pricePerLb.
+    - Savings lines ("Member Savings", "Card Savings") sometimes print next to the WRONG item \
+    (e.g. after a CRV deposit line). Attribute each saving to the item whose Price/You Pay \
+    arithmetic it satisfies, not blindly to the preceding line.
+    - Multi-buy deals ("2 for $5.00", "3 @ 2/$3.00"): set quantity to the units rung and \
+    unitPrice to the average per unit so quantity × unitPrice = pricePaid.
+    - Voided/cancelled lines: include as line_type "refund" with negative pricePaid.
+    - lineType: classify each line as one of "item" (normal grocery product), \
+    "deposit" (bottle/CRV deposit), "fee" (bag fee, service charge), \
+    "refund" (bag refund, returns — pricePaid negative), \
+    "discount" (a standalone discount/coupon line), \
+    "non_grocery" (household goods, merchandise, clothing, plants, gift cards)
     - listPrice: the regular shelf price for this line total (before any sale/coupon)
     - pricePaid: the actual amount charged (after discounts); equal to listPrice when no discount
     - lineTotal: same as pricePaid
@@ -164,6 +184,10 @@ enum ExtractionService {
     - category: copy the department label from the receipt if present; infer if not
     - Include EVERY line item: groceries, produce, deposits, fees, bag charges
     - null for any field that is genuinely absent from the receipt
+    - SELF-CHECK before answering: the sum of pricePaid across all line items (plus tax, unless \
+    tax is already a line) must equal total within $0.02. If it does not, re-read the receipt \
+    for a missed line or misread digit, and prefer the digit reading that reconciles the total. \
+    Lower confidence on any line you could not verify.
     - overallConfidence: 0.0–1.0 float reflecting your confidence in the overall extraction \
     (1.0 = perfectly legible receipt, 0.0 = nearly unreadable)
     - confidence (per item): 0.0–1.0 float reflecting confidence for that specific line \
