@@ -76,6 +76,9 @@ DerivedData/
 # macOS
 .DS_Store
 
+# gitea-runner registration secret (never commit; belongs in the runner's own dir)
+.runner
+
 # Personal receipt data — never commit real purchase/receipt data.
 # receipts_raw/ is the local baseline extraction pipeline's working data
 # (scans, per-receipt JSON, extracted CSVs). db/baseline/ and
