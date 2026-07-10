@@ -72,3 +72,16 @@ claude.md
 build/
 dist/
 DerivedData/
+
+# macOS
+.DS_Store
+
+# Personal receipt data — never commit real purchase/receipt data.
+# receipts_raw/ is the local baseline extraction pipeline's working data
+# (scans, per-receipt JSON, extracted CSVs). db/baseline/ and
+# db/baseline_full.sql are generated data dumps loaded from it. Schema/
+# tooling under db/ (schema.sql, load_baseline.sh, analysis_queries.sql)
+# stay tracked — only the generated data below is excluded.
+receipts_raw/
+db/baseline/
+db/baseline_full.sql
