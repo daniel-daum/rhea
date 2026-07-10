@@ -46,7 +46,7 @@ struct ReceiptListView: View {
 
                     TableColumn("Total") { receipt in
                         if let total = receipt.extracted?.total {
-                            Text(formatCurrency(total))
+                            Text(AppFormatters.currency(total))
                                 .font(.subheadline.weight(.semibold))
                                 .monospacedDigit()
                                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -252,16 +252,7 @@ struct ReceiptListView: View {
 
     private func dateText(for receipt: Receipt) -> String {
         guard let iso = receipt.extracted?.date else { return "—" }
-        let fmt = ISO8601DateFormatter()
-        guard let date = fmt.date(from: iso) else { return iso }
-        return date.formatted(date: .abbreviated, time: .omitted)
-    }
-
-    private func formatCurrency(_ value: Decimal) -> String {
-        let fmt = NumberFormatter()
-        fmt.numberStyle = .currency
-        fmt.locale = .current
-        return fmt.string(from: value as NSDecimalNumber) ?? "\(value)"
+        return AppFormatters.shortDate(fromISO: iso)
     }
 }
 
@@ -326,28 +317,12 @@ struct StatusCell: View {
     var position: (index: Int, total: Int)? = nil
 
     var body: some View {
-        HStack(spacing: 5) {
-            if status == .inProgress {
-                ProgressView().controlSize(.small)
-            } else {
-                Circle()
-                    .fill(color)
-                    .frame(width: 6, height: 6)
-                    .shadow(color: color.opacity(0.6), radius: 2.5, x: 0, y: 0)
-            }
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(color)
-            if let p = position {
-                Text("\(p.index)/\(p.total)")
-                    .font(.system(size: 10, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(color.opacity(0.1))
-        .clipShape(Capsule())
+        StatusBadge(
+            label: label,
+            color: Color.status(for: status, confirmed: confirmed),
+            showSpinner: status == .inProgress,
+            trailing: position.map { "\($0.index)/\($0.total)" }
+        )
     }
 
     private var label: String {
@@ -356,15 +331,6 @@ struct StatusCell: View {
         case .inProgress: return "Processing"
         case .done:       return confirmed ? "Confirmed" : "Processed"
         case .failed:     return "Failed"
-        }
-    }
-
-    private var color: Color {
-        switch status {
-        case .done:       return confirmed ? .green : .blue
-        case .failed:     return .red
-        case .inProgress: return .orange
-        case .queued:     return .secondary
         }
     }
 }
@@ -380,19 +346,13 @@ struct ConfidenceCell: View {
                 let pct = Int((c * 100).rounded())
                 Text("\(pct)%")
                     .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(color(c))
+                    .foregroundStyle(Color.confidence(for: c))
             } else {
                 Text("—")
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
             }
         }
-    }
-
-    private func color(_ c: Double) -> Color {
-        if c >= 0.85 { return .green }
-        if c >= 0.60 { return .orange }
-        return .red
     }
 }
 
