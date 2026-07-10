@@ -47,6 +47,11 @@ jobs:
 
       - name: Build Release
         run: |
+          # Notarization requirements a plain (non-archive) xcodebuild doesn't meet
+          # by default: sign with a secure timestamp (Xcode passes --timestamp=none
+          # outside of Archive) and don't inject the get-task-allow debug
+          # entitlement (CODE_SIGN_INJECT_BASE_ENTITLEMENTS). Apple rejects the
+          # submission as Invalid on both counts otherwise.
           xcodebuild clean build \
             -project Rhea.xcodeproj \
             -scheme Rhea \
@@ -54,7 +59,8 @@ jobs:
             -destination 'platform=macOS' \
             -derivedDataPath build \
             MARKETING_VERSION="${{ steps.version.outputs.marketing_version }}" \
-            OTHER_CODE_SIGN_FLAGS="--keychain $keychain_path"
+            CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+            OTHER_CODE_SIGN_FLAGS="--keychain $keychain_path --timestamp"
 
       - name: Verify code signature
         run: |
@@ -82,11 +88,26 @@ jobs:
           KEY_PATH="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
           echo -n "$APPLE_API_KEY_P8" | base64 --decode -o "$KEY_PATH"
 
-          xcrun notarytool submit "$dmg_path" \
+          # notarytool exits 0 whenever processing completes, even when the verdict
+          # is Invalid — parse the status and fetch the rejection log ourselves.
+          SUBMIT_JSON=$(xcrun notarytool submit "$dmg_path" \
             --key "$KEY_PATH" \
             --key-id "$APPLE_API_KEY_ID" \
             --issuer "$APPLE_API_ISSUER_ID" \
-            --wait
+            --wait --output-format json)
+          echo "$SUBMIT_JSON"
+          STATUS=$(echo "$SUBMIT_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
+          SUBMISSION_ID=$(echo "$SUBMIT_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Notarization verdict: $STATUS — fetching log:"
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --key "$KEY_PATH" \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_ISSUER_ID"
+            rm -f "$KEY_PATH"
+            exit 1
+          fi
 
           rm -f "$KEY_PATH"
 
