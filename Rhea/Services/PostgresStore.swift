@@ -130,7 +130,9 @@ enum PostgresStore {
     CREATE INDEX IF NOT EXISTS idx_li_receipt     ON receipt_line_items (receipt_id);
     """
 
-    private static func makeInsertSQL(_ r: Receipt) -> String {
+    // Internal (not private) so RheaTests can exercise SQL generation directly via
+    // `@testable import Rhea` without running psql or touching the filesystem.
+    static func makeInsertSQL(_ r: Receipt) -> String {
         let e   = r.extracted!
         let id  = r.id.uuidString
         let receiptKey = r.naturalKey
