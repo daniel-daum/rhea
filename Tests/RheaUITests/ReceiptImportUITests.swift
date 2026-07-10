@@ -19,7 +19,9 @@ final class ReceiptImportUITests: XCTestCase {
         // Import selects the "Queued" filter tab, but the stub server can finish extraction
         // before this test gets to look — switch to "All" so the row stays visible regardless
         // of which status it's landed in by the time we check.
-        app.radioButtons["All"].click()
+        let allFilter = app.radioButtons["All"]
+        XCTAssertTrue(allFilter.waitForExistence(timeout: 10), "main window should finish rendering before interacting")
+        allFilter.click()
 
         let row = app.element(identifierPrefix: "receipt-row-")
         XCTAssertTrue(row.waitForExistence(timeout: 15), "imported receipt should appear as a row")

@@ -62,6 +62,21 @@ jobs:
             CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
             OTHER_CODE_SIGN_FLAGS="--keychain $keychain_path --timestamp"
 
+      - name: Re-sign Sparkle's embedded helpers for notarization
+        run: |
+          # Sparkle's SPM package ships prebuilt XPC services/helper apps (Autoupdate,
+          # Updater.app, Downloader.xpc, Installer.xpc) that keep their own upstream
+          # signature after Xcode embeds them, instead of being re-signed with our
+          # Developer ID identity — notarization rejects those as "not signed with a
+          # valid Developer ID certificate" / "signature does not include a secure
+          # timestamp". `--deep` re-signs the app and everything nested inside it
+          # (including Sparkle's helpers) with one consistent identity/timestamp/
+          # hardened-runtime, which is also why this has to happen after Build Release
+          # and before the app gets verified/packaged.
+          codesign --force --deep --options runtime --timestamp \
+            --sign "Developer ID Application" --keychain "$keychain_path" \
+            "build/Build/Products/Release/Rhea.app"
+
       - name: Verify code signature
         run: |
           APP_PATH="build/Build/Products/Release/Rhea.app"
