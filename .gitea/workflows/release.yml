@@ -105,18 +105,14 @@ jobs:
             security delete-keychain "$keychain_path" || true
           fi
 
-      - name: Build changelog
+      - name: Extract changelog section
         id: changelog
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 "${{ steps.version.outputs.tag }}^" 2>/dev/null || true)
+          NOTES=$(python3 Packaging/scripts/extract_changelog.py \
+            "${{ steps.version.outputs.marketing_version }}" CHANGELOG.md)
           {
             echo "log<<EOF"
-            if [ -n "$PREV_TAG" ]; then
-              git log "$PREV_TAG..${{ steps.version.outputs.tag }}" --pretty=format:"- %s (%h)"
-            else
-              git log "${{ steps.version.outputs.tag }}" --pretty=format:"- %s (%h)"
-            fi
-            echo
+            echo "$NOTES"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
