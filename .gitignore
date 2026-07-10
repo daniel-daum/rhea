@@ -62,7 +62,8 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 # agents
-claude.md
+# CLAUDE.md is intentionally tracked (see file map in the doc itself) — do not ignore it.
+# .claude/ holds local, machine-specific settings (e.g. settings.local.json) and stays ignored.
 .claude
 
 # XcodeGen — project.yml is the source of truth; the .xcodeproj is generated
