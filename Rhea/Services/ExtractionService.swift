@@ -94,7 +94,7 @@ enum ExtractionService {
     }
 
     // Strip optional markdown code fences (```json ... ```) that some models add
-    private static func extractJSON(from raw: String) -> Data? {
+    static func extractJSON(from raw: String) -> Data? {
         var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if s.hasPrefix("```") {
