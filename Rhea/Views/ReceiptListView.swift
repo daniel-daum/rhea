@@ -60,6 +60,11 @@ struct ReceiptListView: View {
                     }
                     .width(min: 96, ideal: 132)
 
+                    TableColumn("Conf.") { receipt in
+                        ConfidenceCell(confidence: receipt.extracted?.overallConfidence)
+                    }
+                    .width(min: 44, ideal: 55)
+
                     TableColumn("Time") { receipt in
                         TimeCell(receipt: receipt, viewModel: viewModel)
                     }
@@ -358,6 +363,33 @@ struct StatusCell: View {
         case .inProgress: return .orange
         case .queued:     return .secondary
         }
+    }
+}
+
+// MARK: - ConfidenceCell
+
+struct ConfidenceCell: View {
+    let confidence: Double?
+
+    var body: some View {
+        Group {
+            if let c = confidence {
+                let pct = Int((c * 100).rounded())
+                Text("\(pct)%")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(color(c))
+            } else {
+                Text("—")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    private func color(_ c: Double) -> Color {
+        if c >= 0.85 { return .green }
+        if c >= 0.60 { return .orange }
+        return .red
     }
 }
 

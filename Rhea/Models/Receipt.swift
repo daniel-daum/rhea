@@ -36,6 +36,9 @@ public struct LineItem: Codable, Equatable, Hashable {
     // Alias kept for backward compat; same as pricePaid when both present
     public let  lineTotal:   Decimal?
 
+    // Model's confidence in this line item extraction (0.0–1.0); nil when unavailable
+    public let  confidence:  Double?
+
     public init(
         name:           String,
         aiCommonName:   String?  = nil,
@@ -48,7 +51,8 @@ public struct LineItem: Codable, Equatable, Hashable {
         pricePerLb: Decimal? = nil,
         listPrice:  Decimal? = nil,
         pricePaid:  Decimal? = nil,
-        lineTotal:  Decimal? = nil
+        lineTotal:  Decimal? = nil,
+        confidence: Double?  = nil
     ) {
         self.name           = name
         self.aiCommonName   = aiCommonName
@@ -62,12 +66,13 @@ public struct LineItem: Codable, Equatable, Hashable {
         self.listPrice  = listPrice
         self.pricePaid  = pricePaid
         self.lineTotal  = lineTotal
+        self.confidence = confidence
     }
 
     enum CodingKeys: String, CodingKey {
         case name, aiCommonName, userCommonName, category, barcode
         case quantity, unitPrice, weightLbs, pricePerLb
-        case listPrice, pricePaid, lineTotal
+        case listPrice, pricePaid, lineTotal, confidence
     }
 
     // The vision model emits "commonName"; older saved records used it too.
@@ -93,6 +98,7 @@ public struct LineItem: Codable, Equatable, Hashable {
         self.listPrice  = c.lenientDecimal(.listPrice)
         self.pricePaid  = c.lenientDecimal(.pricePaid)
         self.lineTotal  = c.lenientDecimal(.lineTotal)
+        self.confidence = try? c.decode(Double.self, forKey: .confidence)
     }
 
     // Effective price paid — use pricePaid if present, fallback to lineTotal
@@ -115,6 +121,8 @@ public struct ExtractedReceipt: Codable, Equatable, Hashable {
     public let tax:          Decimal?
     public let paymentMethod: String?
     public let lineItems:    [LineItem]
+    // Model's overall confidence in the entire extraction (0.0–1.0); nil when unavailable
+    public let overallConfidence: Double?
 
     public init(
         merchant:      String,
@@ -126,7 +134,8 @@ public struct ExtractedReceipt: Codable, Equatable, Hashable {
         total:         Decimal,
         tax:           Decimal? = nil,
         paymentMethod: String?  = nil,
-        lineItems:     [LineItem]
+        lineItems:     [LineItem],
+        overallConfidence: Double? = nil
     ) {
         self.merchant      = merchant
         self.chain         = chain
@@ -138,11 +147,13 @@ public struct ExtractedReceipt: Codable, Equatable, Hashable {
         self.tax           = tax
         self.paymentMethod = paymentMethod
         self.lineItems     = lineItems
+        self.overallConfidence = overallConfidence
     }
 
     enum CodingKeys: String, CodingKey {
         case merchant, chain, storeNumber, storeAddress, date
         case receiptNumber, total, tax, paymentMethod, lineItems
+        case overallConfidence
     }
 
     // Lenient decoding: tolerate model quirks (numeric storeNumber, quoted total, …).
@@ -158,6 +169,7 @@ public struct ExtractedReceipt: Codable, Equatable, Hashable {
         self.tax           = c.lenientDecimal(.tax)
         self.paymentMethod = c.lenientString(.paymentMethod)
         self.lineItems     = (try? c.decode([LineItem].self, forKey: .lineItems)) ?? []
+        self.overallConfidence = try? c.decode(Double.self, forKey: .overallConfidence)
     }
 }
 

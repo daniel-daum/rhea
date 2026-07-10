@@ -20,6 +20,8 @@ private struct EditableLineItem: Identifiable {
     // Pricing
     var listPrice:  String
     var pricePaid:  String
+    // Model confidence for this item (read-only, passed through on save)
+    var confidence: Double?
 
     init(name: String) {
         self.name           = name
@@ -33,6 +35,7 @@ private struct EditableLineItem: Identifiable {
         self.pricePerLb = ""
         self.listPrice  = ""
         self.pricePaid  = ""
+        self.confidence = nil
     }
 
     init(from item: LineItem) {
@@ -48,6 +51,7 @@ private struct EditableLineItem: Identifiable {
         self.pricePerLb = item.pricePerLb.map { "\($0)" } ?? ""
         self.listPrice  = item.listPrice.map  { "\($0)" } ?? ""
         self.pricePaid  = (item.pricePaid ?? item.lineTotal).map { "\($0)" } ?? ""
+        self.confidence = item.confidence
     }
 
     func toLineItem() -> LineItem {
@@ -65,7 +69,8 @@ private struct EditableLineItem: Identifiable {
             pricePerLb: Decimal(string: pricePerLb),
             listPrice:  list,
             pricePaid:  paid,
-            lineTotal:  paid ?? Decimal(string: pricePaid)
+            lineTotal:  paid ?? Decimal(string: pricePaid),
+            confidence: confidence
         )
     }
 }
@@ -87,6 +92,11 @@ struct ReceiptEditForm: View {
     @State private var paymentMethod: String
     @State private var lineItems:     [EditableLineItem]
 
+    // Read-only model fields passed through on save
+    @State private var overallConfidence: Double?
+    // True when the model didn't extract a receipt number — the field is auto-generated
+    @State private var isReceiptNumberAuto: Bool
+
     // Fixed pricing-column geometry — shared by every row so edges line up exactly.
     private let qtyW:   CGFloat = 44
     private let opW:    CGFloat = 18
@@ -104,11 +114,15 @@ struct ReceiptEditForm: View {
         _storeNumber   = State(initialValue: e?.storeNumber   ?? "")
         _storeAddress  = State(initialValue: e?.storeAddress  ?? "")
         _date          = State(initialValue: e?.date          ?? "")
-        _receiptNumber = State(initialValue: e?.receiptNumber ?? "")
+        // If the model didn't extract a receipt number, fill in the generated fallback
+        let hasExtractedReceiptNumber = e?.receiptNumber != nil
+        _receiptNumber = State(initialValue: e?.receiptNumber ?? receipt.generatedReceiptNumber)
+        _isReceiptNumberAuto = State(initialValue: !hasExtractedReceiptNumber)
         _total         = State(initialValue: e.map { "\($0.total)" } ?? "")
         _tax           = State(initialValue: e?.tax.map { "\($0)" } ?? "")
         _paymentMethod = State(initialValue: e?.paymentMethod ?? "")
         _lineItems     = State(initialValue: e?.lineItems.map { EditableLineItem(from: $0) } ?? [])
+        _overallConfidence = State(initialValue: e?.overallConfidence)
     }
 
     var body: some View {
@@ -156,16 +170,66 @@ struct ReceiptEditForm: View {
             VStack(spacing: 7) {
                 idRow("Receipt ID", value: receipt.publicID)
                 idRow("Key",        value: receipt.naturalKey)
+                if let conf = overallConfidence {
+                    confidenceRow(conf)
+                }
                 detailRow("Merchant",      $merchant)
                 detailRow("Chain",         $chain)
                 detailRow("Store #",       $storeNumber)
                 detailRow("Store Address", $storeAddress)
                 detailRow("Date",          $date)
-                detailRow("Receipt #",     $receiptNumber)
+                receiptNumberRow
                 detailRow("Total",         $total)
                 detailRow("Tax",           $tax)
                 detailRow("Payment",       $paymentMethod)
             }
+        }
+    }
+
+    private var receiptNumberRow: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Receipt #")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if isReceiptNumberAuto && !isReadOnly {
+                    Text("auto-generated · replace with value from image")
+                        .font(.caption2)
+                        .foregroundStyle(.orange.opacity(0.85))
+                }
+            }
+            .frame(width: 116, alignment: .leading)
+
+            HStack(spacing: 6) {
+                if isReceiptNumberAuto && !isReadOnly {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.orange.opacity(0.7))
+                }
+                TextField("", text: $receiptNumber)
+                    .textFieldStyle(.plain)
+                    .multilineTextAlignment(.trailing)
+                    .foregroundStyle(isReadOnly ? Color.secondary : (isReceiptNumberAuto ? Color.orange.opacity(0.9) : Color.primary))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .disabled(isReadOnly)
+                    .onChange(of: receiptNumber) { _, newValue in
+                        // Once the user types something different from the generated value, clear the auto flag
+                        if newValue != receipt.generatedReceiptNumber {
+                            isReceiptNumberAuto = false
+                        }
+                    }
+            }
+        }
+    }
+
+    private func confidenceRow(_ confidence: Double) -> some View {
+        HStack(spacing: 12) {
+            Text("AI Confidence")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(width: 116, alignment: .leading)
+            Spacer()
+            confidencePill(confidence)
         }
     }
 
@@ -237,12 +301,17 @@ struct ReceiptEditForm: View {
         HStack(alignment: .top, spacing: 14) {
             // LEFT — identity (flexible width)
             VStack(alignment: .leading, spacing: 4) {
-                // Receipt item name — primary
-                TextField("Item name", text: item.name)
-                    .textFieldStyle(.plain)
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .disabled(isReadOnly)
+                // Receipt item name — primary, with confidence badge at trailing end
+                HStack(spacing: 6) {
+                    TextField("Item name", text: item.name)
+                        .textFieldStyle(.plain)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .disabled(isReadOnly)
+                    if let conf = item.wrappedValue.confidence {
+                        confidencePill(conf)
+                    }
+                }
 
                 // Your common name — secondary (user-confirmed data)
                 HStack(spacing: 5) {
@@ -401,6 +470,27 @@ struct ReceiptEditForm: View {
             .disabled(isReadOnly)
     }
 
+    // MARK: - Confidence badge
+
+    /// Small colored capsule showing a confidence percentage.
+    private func confidencePill(_ confidence: Double) -> some View {
+        let pct   = Int((confidence * 100).rounded())
+        let color = confidenceColor(confidence)
+        return Text("\(pct)%")
+            .font(.system(size: 9, weight: .semibold).monospacedDigit())
+            .foregroundStyle(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
+    }
+
+    private func confidenceColor(_ c: Double) -> Color {
+        if c >= 0.85 { return .green }
+        if c >= 0.60 { return .orange }
+        return .red
+    }
+
     /// Muted, low-saturation category palette — carried by a small dot, not a fill.
     private func categoryColor(_ raw: String) -> Color {
         let s = raw.uppercased()
@@ -484,7 +574,8 @@ struct ReceiptEditForm: View {
             total:         Decimal(string: trim(total))      ?? (receipt.extracted?.total ?? 0),
             tax:           trim(tax).isEmpty ? nil           : Decimal(string: trim(tax)),
             paymentMethod: trim(paymentMethod).isEmpty ? nil : trim(paymentMethod),
-            lineItems:     lineItems.map { $0.toLineItem() }
+            lineItems:     lineItems.map { $0.toLineItem() },
+            overallConfidence: overallConfidence
         )
         Task { await viewModel.updateAndConfirm(receipt.id, extracted: updated) }
     }

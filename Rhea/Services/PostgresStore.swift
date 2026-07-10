@@ -61,20 +61,21 @@ enum PostgresStore {
 
     private static let createTablesSQL = """
     CREATE TABLE IF NOT EXISTS receipts (
-        id              UUID PRIMARY KEY,
-        receipt_key     TEXT,
-        merchant        TEXT NOT NULL,
-        chain           TEXT,
-        store_number    TEXT,
-        store_address   TEXT,
-        date            TEXT NOT NULL,
-        receipt_number  TEXT,
-        total           NUMERIC(10,2) NOT NULL,
-        tax             NUMERIC(10,2),
-        payment_method  TEXT,
-        confirmed       BOOLEAN DEFAULT FALSE,
-        source_file     TEXT,
-        created_at      TIMESTAMPTZ DEFAULT NOW()
+        id                  UUID PRIMARY KEY,
+        receipt_key         TEXT,
+        merchant            TEXT NOT NULL,
+        chain               TEXT,
+        store_number        TEXT,
+        store_address       TEXT,
+        date                TEXT NOT NULL,
+        receipt_number      TEXT,
+        total               NUMERIC(10,2) NOT NULL,
+        tax                 NUMERIC(10,2),
+        payment_method      TEXT,
+        overall_confidence  NUMERIC(4,3),
+        confirmed           BOOLEAN DEFAULT FALSE,
+        source_file         TEXT,
+        created_at          TIMESTAMPTZ DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS receipt_line_items (
         id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,7 +92,8 @@ enum PostgresStore {
         price_per_lb    NUMERIC(10,4),
         list_price      NUMERIC(10,2),
         price_paid      NUMERIC(10,2),
-        line_total      NUMERIC(10,2)
+        line_total      NUMERIC(10,2),
+        confidence      NUMERIC(4,3)
     );
     -- Add new columns to receipts if upgrading from earlier schema
     ALTER TABLE receipts ADD COLUMN IF NOT EXISTS receipt_key TEXT;
@@ -99,6 +101,7 @@ enum PostgresStore {
     ALTER TABLE receipts ADD COLUMN IF NOT EXISTS store_number TEXT;
     ALTER TABLE receipts ADD COLUMN IF NOT EXISTS store_address TEXT;
     ALTER TABLE receipts ADD COLUMN IF NOT EXISTS receipt_number TEXT;
+    ALTER TABLE receipts ADD COLUMN IF NOT EXISTS overall_confidence NUMERIC(4,3);
     -- Add new columns to receipt_line_items if upgrading
     ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS item_key TEXT;
     ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS ai_common_name TEXT;
@@ -109,6 +112,7 @@ enum PostgresStore {
     ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS price_per_lb NUMERIC(10,4);
     ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS list_price NUMERIC(10,2);
     ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS price_paid NUMERIC(10,2);
+    ALTER TABLE receipt_line_items ADD COLUMN IF NOT EXISTS confidence NUMERIC(4,3);
     """
 
     private static func makeInsertSQL(_ r: Receipt) -> String {
@@ -116,13 +120,15 @@ enum PostgresStore {
         let id  = r.id.uuidString
         let receiptKey = r.naturalKey
 
+        let overallConf = e.overallConfidence.map { String(format: "%.3f", $0) } ?? "NULL"
         let sql_receipt = """
-        INSERT INTO receipts (id,receipt_key,merchant,chain,store_number,store_address,date,receipt_number,total,tax,payment_method,confirmed,source_file)
-        VALUES (\(s(id)),\(s(receiptKey)),\(s(e.merchant)),\(n(e.chain)),\(n(e.storeNumber)),\(n(e.storeAddress)),\(s(e.date)),\(n(e.receiptNumber)),\(fmt(e.total)),\(e.tax.map { fmt($0) } ?? "NULL"),\(n(e.paymentMethod)),\(r.confirmed ? "TRUE" : "FALSE"),\(s(r.sourceURL.lastPathComponent)))
+        INSERT INTO receipts (id,receipt_key,merchant,chain,store_number,store_address,date,receipt_number,total,tax,payment_method,overall_confidence,confirmed,source_file)
+        VALUES (\(s(id)),\(s(receiptKey)),\(s(e.merchant)),\(n(e.chain)),\(n(e.storeNumber)),\(n(e.storeAddress)),\(s(e.date)),\(n(e.receiptNumber)),\(fmt(e.total)),\(e.tax.map { fmt($0) } ?? "NULL"),\(n(e.paymentMethod)),\(overallConf),\(r.confirmed ? "TRUE" : "FALSE"),\(s(r.sourceURL.lastPathComponent)))
         ON CONFLICT (id) DO UPDATE SET
           receipt_key=EXCLUDED.receipt_key,merchant=EXCLUDED.merchant,chain=EXCLUDED.chain,store_number=EXCLUDED.store_number,
           store_address=EXCLUDED.store_address,date=EXCLUDED.date,receipt_number=EXCLUDED.receipt_number,
-          total=EXCLUDED.total,tax=EXCLUDED.tax,payment_method=EXCLUDED.payment_method,confirmed=EXCLUDED.confirmed;
+          total=EXCLUDED.total,tax=EXCLUDED.tax,payment_method=EXCLUDED.payment_method,
+          overall_confidence=EXCLUDED.overall_confidence,confirmed=EXCLUDED.confirmed;
         DELETE FROM receipt_line_items WHERE receipt_id=\(s(id));
         """
 
@@ -131,6 +137,7 @@ enum PostgresStore {
         let rows = e.lineItems.enumerated().map { (index, item) -> String in
             let effectivePaid = item.pricePaid ?? item.lineTotal
             let itemKey = item.stableKey(receiptKey: receiptKey, index: index)
+            let itemConf = item.confidence.map { String(format: "%.3f", $0) } ?? "NULL"
             return """
             (\(s(id)),\(s(itemKey)),\(s(item.name)),\(n(item.aiCommonName)),\(n(item.userCommonName)),\(n(item.category)),\(n(item.barcode)),\
             \(item.quantity.map   { fmt($0, d: 3) } ?? "NULL"),\
@@ -139,12 +146,13 @@ enum PostgresStore {
             \(item.pricePerLb.map { fmt($0, d: 4) } ?? "NULL"),\
             \(item.listPrice.map  { fmt($0) }       ?? "NULL"),\
             \(effectivePaid.map   { fmt($0) }       ?? "NULL"),\
-            \(item.lineTotal.map  { fmt($0) }       ?? "NULL"))
+            \(item.lineTotal.map  { fmt($0) }       ?? "NULL"),\
+            \(itemConf))
             """
         }.joined(separator: ",\n")
 
         return sql_receipt + """
-        INSERT INTO receipt_line_items(receipt_id,item_key,name,ai_common_name,common_name,category,barcode,quantity,unit_price,weight_lbs,price_per_lb,list_price,price_paid,line_total)
+        INSERT INTO receipt_line_items(receipt_id,item_key,name,ai_common_name,common_name,category,barcode,quantity,unit_price,weight_lbs,price_per_lb,list_price,price_paid,line_total,confidence)
         VALUES \(rows);
         """
     }

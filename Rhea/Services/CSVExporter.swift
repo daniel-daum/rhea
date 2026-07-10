@@ -34,8 +34,8 @@ enum CSVExporter {
     private static let header =
         "RECEIPT_ID,RECEIPT_KEY,ITEM_KEY," +
         "RECEIPT_SCAN,CHAIN,STORE_NUMBER,STORE_ADDRESS,DATE,RECEIPT_NUMBER," +
-        "CATEGORY,CODE,ITEM,AI_COMMON_NAME,COMMON_NAME," +
-        "WEIGHT_LB,PRICE_PER_LB,QUANTITY,PRICE_PER_UNIT,LIST_PRICE,PRICE_PAID"
+        "RECEIPT_CONFIDENCE,CATEGORY,CODE,ITEM,AI_COMMON_NAME,COMMON_NAME," +
+        "WEIGHT_LB,PRICE_PER_LB,QUANTITY,PRICE_PER_UNIT,LIST_PRICE,PRICE_PAID,ITEM_CONFIDENCE"
 
     private static func makeRow(receipt: Receipt, extracted e: ExtractedReceipt,
                                 item: LineItem, receiptKey: String, index: Int) -> String {
@@ -49,6 +49,7 @@ enum CSVExporter {
             q(e.storeAddress ?? ""),                                    // STORE_ADDRESS
             q(e.date.prefix(10).description),                          // DATE (YYYY-MM-DD)
             q(e.receiptNumber ?? ""),                                   // RECEIPT_NUMBER
+            e.overallConfidence.map { String(format: "%.2f", $0) } ?? "",  // RECEIPT_CONFIDENCE
             q(item.category ?? ""),                                     // CATEGORY
             q(item.barcode ?? ""),                                      // CODE
             q(item.name),                                               // ITEM
@@ -60,6 +61,7 @@ enum CSVExporter {
             item.unitPrice.map   { "\($0)" } ?? "",                    // PRICE_PER_UNIT
             item.listPrice.map   { "\($0)" } ?? "",                    // LIST_PRICE
             (item.pricePaid ?? item.lineTotal).map { "\($0)" } ?? "",  // PRICE_PAID
+            item.confidence.map { String(format: "%.2f", $0) } ?? "",  // ITEM_CONFIDENCE
         ]
         return fields.joined(separator: ",")
     }

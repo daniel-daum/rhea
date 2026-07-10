@@ -10,20 +10,30 @@ func slugComponent(_ raw: String) -> String {
 }
 
 public extension Receipt {
-    /// Prefixed, stable public identifier derived from the UUID (e.g. `rcpt_ab12…`).
+    /// Prefixed, stable public identifier derived from the UUID.
     var publicID: String {
-        "rcpt_" + id.uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+        "rhea_receipt_id_" + id.uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     }
 
-    /// Human-readable natural key chained to the UUID, for DB analysis:
-    /// `chain_storeNumber_date_receiptNumber` (slugified). Falls back to `publicID`
-    /// when essential parts (at minimum chain + one other) are missing.
+    /// Short, stable fallback receipt number derived from the receipt UUID.
+    /// Used when the model cannot read the barcode or receipt number from the image.
+    var generatedReceiptNumber: String {
+        let hex = id.uuidString.replacingOccurrences(of: "-", with: "").prefix(8).uppercased()
+        return "RHR-\(hex)"
+    }
+
+    /// Human-readable natural key for DB analysis:
+    /// `chain_storeNumber_date_receiptNumber` (slugified).
+    /// When no receipt number is extracted, the UUID-derived generatedReceiptNumber is used
+    /// to guarantee uniqueness across same-merchant same-date purchases.
+    /// Falls back to publicID when chain + at least one other component are unavailable.
     var naturalKey: String {
         guard let e = extracted else { return publicID }
         let chain   = e.chain.map(slugComponent) ?? ""
         let store   = e.storeNumber.map(slugComponent) ?? ""
-        let date    = String(e.date.prefix(10))                 // YYYY-MM-DD
-        let receipt = e.receiptNumber.map(slugComponent) ?? ""
+        let date    = String(e.date.prefix(10))                       // YYYY-MM-DD
+        // Prefer the extracted receipt number; fall back to UUID-derived for uniqueness
+        let receipt = e.receiptNumber.map(slugComponent) ?? slugComponent(generatedReceiptNumber)
         let parts   = [chain, store, date, receipt].filter { !$0.isEmpty }
         guard !chain.isEmpty, parts.count >= 2 else { return publicID }
         return parts.joined(separator: "_")

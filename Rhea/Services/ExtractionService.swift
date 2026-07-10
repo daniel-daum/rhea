@@ -129,6 +129,7 @@ enum ExtractionService {
       "total": 42.50,
       "tax": 3.50,
       "paymentMethod": "Visa ****1234",
+      "overallConfidence": 0.95,
       "lineItems": [
         {
           "name": "Item name EXACTLY as printed on receipt",
@@ -141,7 +142,8 @@ enum ExtractionService {
           "pricePerLb": null,
           "listPrice": 5.98,
           "pricePaid": 4.98,
-          "lineTotal": 4.98
+          "lineTotal": 4.98,
+          "confidence": 0.97
         }
       ]
     }
@@ -162,6 +164,10 @@ enum ExtractionService {
     - category: copy the department label from the receipt if present; infer if not
     - Include EVERY line item: groceries, produce, deposits, fees, bag charges
     - null for any field that is genuinely absent from the receipt
+    - overallConfidence: 0.0–1.0 float reflecting your confidence in the overall extraction \
+    (1.0 = perfectly legible receipt, 0.0 = nearly unreadable)
+    - confidence (per item): 0.0–1.0 float reflecting confidence for that specific line \
+    (lower when text is faded, truncated, or ambiguous)
     - Return ONLY the JSON object — no markdown fences, no explanation, no trailing text
     """
 }
