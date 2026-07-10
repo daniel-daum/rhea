@@ -21,7 +21,7 @@ struct SettingsView: View {
     // MARK: - Sections
 
     private var extractionSection: some View {
-        SettingsCard(title: "AI Extraction", icon: "cpu") {
+        Card(title: "AI Extraction", systemImage: "cpu", variant: .section) {
             VStack(spacing: 14) {
                 ConfigField(
                     label: "LM Studio / oMLX Endpoint",
@@ -42,7 +42,7 @@ struct SettingsView: View {
     }
 
     private var postgresSection: some View {
-        SettingsCard(title: "PostgreSQL", icon: "server.rack") {
+        Card(title: "PostgreSQL", systemImage: "server.rack", variant: .section) {
             VStack(spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     ConfigField(
@@ -101,24 +101,25 @@ struct SettingsView: View {
     }
 
     private var exportSection: some View {
-        SettingsCard(title: "Export", icon: "square.and.arrow.up") {
+        Card(title: "Export", systemImage: "square.and.arrow.up", variant: .section) {
             VStack(spacing: 16) {
                 // Status banner
                 if let status = viewModel.exportStatus {
+                    let color = status.isSuccess ? Color.successAccent : Color.errorAccent
                     HStack(spacing: 8) {
                         Image(systemName: status.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(status.isSuccess ? Color.green : Color.red)
+                            .foregroundStyle(color)
                         Text(status.message)
                             .font(.callout)
-                            .foregroundStyle(status.isSuccess ? Color.green : Color.red)
+                            .foregroundStyle(color)
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer()
                     }
                     .padding(12)
-                    .background((status.isSuccess ? Color.green : Color.red).opacity(0.06))
+                    .background(color.opacity(0.06))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder((status.isSuccess ? Color.green : Color.red).opacity(0.2), lineWidth: 0.5)
+                            .strokeBorder(color.opacity(0.2), lineWidth: 0.5)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
@@ -128,14 +129,14 @@ struct SettingsView: View {
                     ExportButton(
                         label: "Export to CSV",
                         icon: "doc.text",
-                        color: .blue,
+                        color: .csvAccent,
                         loading: viewModel.isExporting
                     ) { Task { await viewModel.exportToCSV() } }
 
                     ExportButton(
                         label: "Export to Postgres",
                         icon: "server.rack",
-                        color: .indigo,
+                        color: .postgresAccent,
                         loading: viewModel.isExporting,
                         disabled: !viewModel.postgresConfig.isConfigured
                     ) { Task { await viewModel.exportToPostgres() } }
@@ -165,7 +166,7 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        SettingsCard(title: "About", icon: "info.circle") {
+        Card(title: "About", systemImage: "info.circle", variant: .section) {
             VStack(spacing: 8) {
                 InfoRow(label: "Phase",   value: "6 — Polish & Integration")
                 InfoRow(label: "Build",   value: "Swift Package Manager")
@@ -193,7 +194,7 @@ struct SettingsView: View {
                 .background(Color.secondary.opacity(0.06))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                        .strokeBorder(Color.cardBorder, lineWidth: 0.5)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
@@ -228,32 +229,6 @@ struct SettingsView: View {
 }
 
 // MARK: - Reusable components
-
-private struct SettingsCard<Content: View>: View {
-    let title:   String
-    let icon:    String
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Label(title, systemImage: icon)
-                .font(.headline)
-                .foregroundStyle(.primary)
-
-            Divider()
-
-            content()
-        }
-        .padding(18)
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 1)
-    }
-}
 
 private struct ConfigField: View {
     let label:       String

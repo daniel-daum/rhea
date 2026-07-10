@@ -143,35 +143,10 @@ struct ReceiptEditForm: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Card chrome
-
-    @ViewBuilder
-    private func card<Content: View>(_ title: String, systemImage: String,
-                                     trailing: String? = nil,
-                                     @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(title, systemImage: systemImage)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(nil)
-                Spacer()
-                if let trailing {
-                    Text(trailing).font(.caption).foregroundStyle(.tertiary)
-                }
-            }
-            content()
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.045)))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
-    }
-
     // MARK: - Receipt details
 
     private var detailsCard: some View {
-        card("Receipt Details", systemImage: "doc.text") {
+        Card(title: "Receipt Details", systemImage: "doc.text") {
             VStack(spacing: 7) {
                 idRow("Receipt ID", value: receipt.publicID)
                 idRow("Key",        value: receipt.naturalKey)
@@ -234,7 +209,7 @@ struct ReceiptEditForm: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 116, alignment: .leading)
             Spacer()
-            confidencePill(confidence)
+            ConfidencePill(confidence: confidence)
         }
     }
 
@@ -272,7 +247,7 @@ struct ReceiptEditForm: View {
     // MARK: - Line items
 
     private var lineItemsCard: some View {
-        card("Line Items", systemImage: "list.bullet",
+        Card(title: "Line Items", systemImage: "list.bullet",
              trailing: lineItems.isEmpty ? nil : "\(lineItems.count) item\(lineItems.count == 1 ? "" : "s")") {
             if lineItems.isEmpty && isReadOnly {
                 Text("No line items")
@@ -314,7 +289,7 @@ struct ReceiptEditForm: View {
                         .foregroundStyle(.primary)
                         .disabled(isReadOnly)
                     if let conf = item.wrappedValue.confidence {
-                        confidencePill(conf)
+                        ConfidencePill(confidence: conf)
                     }
                 }
 
@@ -354,7 +329,7 @@ struct ReceiptEditForm: View {
                     lineItems.removeAll { $0.id == id }
                 } label: {
                     Image(systemName: "minus.circle.fill")
-                        .foregroundStyle(.red.opacity(0.8))
+                        .foregroundStyle(Color.destructiveAccent.opacity(0.8))
                         .font(.system(size: 14))
                 }
                 .buttonStyle(.plain)
@@ -373,22 +348,22 @@ struct ReceiptEditForm: View {
             HStack(spacing: 5) {
                 Text("AI")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.aiAccent)
                     .padding(.horizontal, 3)
                     .padding(.vertical, 1)
                     .overlay(
                         RoundedRectangle(cornerRadius: 3)
-                            .strokeBorder(.blue.opacity(0.55), lineWidth: 0.75)
+                            .strokeBorder(Color.aiAccent.opacity(0.55), lineWidth: 0.75)
                     )
                 Text(ai)
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.aiAccent)
                     .lineLimit(1)
                 if !isReadOnly && item.wrappedValue.userCommonName.isEmpty {
                     Button { item.wrappedValue.userCommonName = ai } label: {
                         Image(systemName: "arrow.up.left")
                             .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.aiAccent)
                     }
                     .buttonStyle(.plain)
                     .help("Use this suggestion as your common name")
@@ -399,9 +374,8 @@ struct ReceiptEditForm: View {
 
     /// Category — tertiary: small muted text with a low-key color dot (no heavy fill).
     private func categoryTag(item: Binding<EditableLineItem>) -> some View {
-        let color = categoryColor(item.wrappedValue.category)
-        return HStack(spacing: 5) {
-            Circle().fill(color.opacity(0.85)).frame(width: 6, height: 6)
+        HStack(spacing: 5) {
+            CategoryDot(category: item.wrappedValue.category)
             TextField("category", text: item.category)
                 .textFieldStyle(.plain)
                 .font(.caption2.weight(.medium))
@@ -476,41 +450,6 @@ struct ReceiptEditForm: View {
             .disabled(isReadOnly)
     }
 
-    // MARK: - Confidence badge
-
-    /// Small colored capsule showing a confidence percentage.
-    private func confidencePill(_ confidence: Double) -> some View {
-        let pct   = Int((confidence * 100).rounded())
-        let color = confidenceColor(confidence)
-        return Text("\(pct)%")
-            .font(.system(size: 9, weight: .semibold).monospacedDigit())
-            .foregroundStyle(color)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.12))
-            .clipShape(Capsule())
-    }
-
-    private func confidenceColor(_ c: Double) -> Color {
-        if c >= 0.85 { return .green }
-        if c >= 0.60 { return .orange }
-        return .red
-    }
-
-    /// Muted, low-saturation category palette — carried by a small dot, not a fill.
-    private func categoryColor(_ raw: String) -> Color {
-        let s = raw.uppercased()
-        if s.contains("PRODUCE")                          { return .green }
-        if s.contains("MEAT") || s.contains("SEAFOOD")    { return .pink }
-        if s.contains("LIQUOR") || s.contains("BEER") || s.contains("WINE") { return .purple }
-        if s.contains("DELI")                             { return .orange }
-        if s.contains("BAK")                              { return .brown }
-        if s.contains("FROZEN") || s.contains("REFRIG")   { return .teal }
-        if s.contains("DAIRY")                            { return .indigo }
-        if s.contains("GROC")                             { return .mint }
-        return .gray
-    }
-
     // MARK: - Confirm footer
 
     @ViewBuilder
@@ -519,11 +458,11 @@ struct ReceiptEditForm: View {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusConfirmed)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Confirmed & Saved")
                         .font(.body.weight(.semibold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusConfirmed)
                     Text("Reviewed. Export from Settings to write to CSV or Postgres.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -532,7 +471,7 @@ struct ReceiptEditForm: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.green.opacity(0.08)))
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.statusConfirmed.opacity(0.08)))
         } else {
             VStack(spacing: 12) {
                 HStack {
@@ -546,7 +485,7 @@ struct ReceiptEditForm: View {
                     Spacer()
                     Button("Confirm") { applyAndConfirm() }
                         .buttonStyle(.borderedProminent)
-                        .tint(.green)
+                        .tint(Color.statusConfirmed)
                         .keyboardShortcut(.return, modifiers: .command)
                         .accessibilityIdentifier("confirm-button")
                 }
@@ -562,8 +501,8 @@ struct ReceiptEditForm: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.045)))
-            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.cardFill))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.cardBorder, lineWidth: 0.5))
         }
     }
 
