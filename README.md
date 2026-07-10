@@ -35,6 +35,15 @@ open Rhea.xcodeproj
 
 See [AGENTS.md](AGENTS.md) for architecture and internals.
 
+## Run tests
+
+```sh
+xcodegen generate
+xcodebuild -project Rhea.xcodeproj -scheme Rhea -destination 'platform=macOS' test
+```
+
+This runs both `RheaTests` (unit, Swift Testing) and `RheaUITests` (XCUITest) headlessly.
+
 ---
 
 <sub>Built with <a href="https://claude.com/claude-code">Claude Code</a>.</sub>

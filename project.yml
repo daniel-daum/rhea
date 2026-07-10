@@ -30,3 +30,42 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Rhea
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Daniel Daum"
+  RheaTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/RheaTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.danieldaum.rhea.tests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+    dependencies:
+      - target: Rhea
+  RheaUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/RheaUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.danieldaum.rhea.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+    dependencies:
+      - target: Rhea
+schemes:
+  Rhea:
+    build:
+      targets:
+        Rhea: all
+        RheaTests: [test]
+        RheaUITests: [test]
+    test:
+      targets:
+        - RheaTests
+        - RheaUITests

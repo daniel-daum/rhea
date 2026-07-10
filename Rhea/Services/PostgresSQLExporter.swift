@@ -43,31 +43,57 @@ actor PostgresSQLExporter: PersistenceStore {
 
     private func makeBlock(_ r: Receipt, extracted e: ExtractedReceipt) -> Block {
         let id   = r.id.uuidString
+        let key  = r.naturalKey
+        let date = String(e.date.prefix(10))                    // YYYY-MM-DD
+        let ts   = e.date.count > 10 ? s(e.date) : "NULL"       // full timestamp if present
         let tot  = formatDecimal(e.total)
         let tax  = e.tax.map { formatDecimal($0) } ?? "NULL"
         let pay  = e.paymentMethod.map { s($0) } ?? "NULL"
         let src  = s(r.sourceURL.lastPathComponent)
         let conf = r.confirmed ? "TRUE" : "FALSE"
+        let oc   = e.overallConfidence.map { String(format: "%.2f", $0) } ?? "NULL"
+        let chain = e.chain.map { s($0) } ?? "NULL"
+        let stNo  = e.storeNumber.map { s($0) } ?? "NULL"
+        let stAd  = e.storeAddress.map { s($0) } ?? "NULL"
+        let rcNo  = e.receiptNumber.map { s($0) } ?? "NULL"
 
         var lines: [String] = [
             "-- Receipt \(id)",
-            "INSERT INTO receipts (id, merchant, date, total, tax, payment_method, confirmed, source_file)",
-            "VALUES (\(s(id)), \(s(e.merchant)), \(s(e.date)), \(tot), \(tax), \(pay), \(conf), \(src))",
-            "ON CONFLICT (id) DO UPDATE SET",
-            "    merchant = EXCLUDED.merchant, date = EXCLUDED.date, total = EXCLUDED.total,",
-            "    tax = EXCLUDED.tax, payment_method = EXCLUDED.payment_method, confirmed = EXCLUDED.confirmed;",
+            "INSERT INTO receipts (id, receipt_key, merchant, chain, store_number, store_address,",
+            "                      purchase_date, purchased_at, receipt_number, total, tax,",
+            "                      payment_method, confirmed, source, source_file, overall_confidence)",
+            "VALUES (\(s(id)), \(s(key)), \(s(e.merchant)), \(chain), \(stNo), \(stAd),",
+            "        \(s(date)), \(ts), \(rcNo), \(tot), \(tax),",
+            "        \(pay), \(conf), 'rhea', \(src), \(oc))",
+            "ON CONFLICT (receipt_key) DO UPDATE SET",
+            "    merchant = EXCLUDED.merchant, chain = EXCLUDED.chain,",
+            "    store_number = EXCLUDED.store_number, store_address = EXCLUDED.store_address,",
+            "    purchase_date = EXCLUDED.purchase_date, purchased_at = EXCLUDED.purchased_at,",
+            "    receipt_number = EXCLUDED.receipt_number, total = EXCLUDED.total, tax = EXCLUDED.tax,",
+            "    payment_method = EXCLUDED.payment_method, confirmed = EXCLUDED.confirmed,",
+            "    source_file = EXCLUDED.source_file, overall_confidence = EXCLUDED.overall_confidence,",
+            "    updated_at = now();",
         ]
 
         if !e.lineItems.isEmpty {
-            lines.append("DELETE FROM receipt_line_items WHERE receipt_id = \(s(id));")
-            let rows = e.lineItems.map { item -> String in
-                let qty  = item.quantity.map  { formatDecimal($0, decimals: 3) } ?? "NULL"
-                let unit = item.unitPrice.map { formatDecimal($0) } ?? "NULL"
-                let tot2 = item.lineTotal.map { formatDecimal($0) } ?? "NULL"
-                return "    (\(s(id)), \(s(item.name)), \(qty), \(unit), \(tot2))"
+            lines.append("DELETE FROM receipt_line_items WHERE receipt_id = (SELECT id FROM receipts WHERE receipt_key = \(s(key)));")
+            let rows = e.lineItems.enumerated().map { (index, item) -> String in
+                let code = item.barcode.map { s($0) } ?? "NULL"
+                let ai   = item.aiCommonName.map { s($0) } ?? "NULL"
+                let cn   = item.userCommonName.map { s($0) } ?? "NULL"
+                let cat  = item.category.map { s($0) } ?? "NULL"
+                let lt   = s(item.effectiveLineType)
+                let qty  = item.quantity.map   { formatDecimal($0, decimals: 3) } ?? "NULL"
+                let unit = item.unitPrice.map  { formatDecimal($0, decimals: 4) } ?? "NULL"
+                let wt   = item.weightLbs.map  { formatDecimal($0, decimals: 4) } ?? "NULL"
+                let plb  = item.pricePerLb.map { formatDecimal($0, decimals: 4) } ?? "NULL"
+                let list = item.listPrice.map  { formatDecimal($0) } ?? "NULL"
+                let paid = item.effectivePricePaid.map { formatDecimal($0) } ?? "NULL"
+                let ic   = item.confidence.map { String(format: "%.2f", $0) } ?? "NULL"
+                return "    ((SELECT id FROM receipts WHERE receipt_key = \(s(key))), \(index + 1), \(code), \(s(item.name)), \(ai), \(cn), \(cat), \(lt), \(qty), \(unit), \(wt), \(plb), \(list), \(paid), \(ic))"
             }.joined(separator: ",\n")
             lines.append(
-                "INSERT INTO receipt_line_items (receipt_id, name, quantity, unit_price, line_total)\nVALUES\n\(rows);"
+                "INSERT INTO receipt_line_items (receipt_id, line_no, item_code, raw_name, ai_common_name, common_name, category, line_type, quantity, unit_price, weight_lbs, price_per_lb, list_price, price_paid, item_confidence)\nVALUES\n\(rows);"
             )
         }
 
@@ -123,39 +149,61 @@ actor PostgresSQLExporter: PersistenceStore {
 
 // MARK: - Postgres schema constant (used by SettingsView)
 
+// Kept in sync with db/schema.sql (the authoritative copy, which also defines
+// the products dimension and analysis views). Shown in SettingsView.
 let postgresSchema = """
+-- Full schema (products dimension + analysis views) lives in db/schema.sql.
 CREATE TABLE IF NOT EXISTS receipts (
     id              UUID PRIMARY KEY,
-    receipt_key     TEXT,
+    receipt_key     TEXT NOT NULL UNIQUE,
     merchant        TEXT NOT NULL,
     chain           TEXT,
     store_number    TEXT,
     store_address   TEXT,
-    date            TEXT NOT NULL,
+    purchase_date   DATE NOT NULL,
+    purchased_at    TIMESTAMPTZ,
     receipt_number  TEXT,
     total           NUMERIC(10,2) NOT NULL,
     tax             NUMERIC(10,2),
     payment_method  TEXT,
-    confirmed       BOOLEAN DEFAULT FALSE,
+    confirmed       BOOLEAN NOT NULL DEFAULT FALSE,
+    source          TEXT NOT NULL DEFAULT 'rhea'
+                    CHECK (source IN ('baseline','rhea','manual')),
     source_file     TEXT,
-    created_at      TIMESTAMPTZ DEFAULT NOW()
+    overall_confidence NUMERIC(3,2),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS receipt_line_items (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    receipt_id      UUID REFERENCES receipts(id) ON DELETE CASCADE,
-    item_key        TEXT,
-    name            TEXT NOT NULL,
+    receipt_id      UUID NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
+    line_no         INT  NOT NULL,
+    item_code       TEXT,
+    raw_name        TEXT NOT NULL,
     ai_common_name  TEXT,
     common_name     TEXT,
+    product_id      BIGINT,
     category        TEXT,
-    barcode         TEXT,
+    line_type       TEXT NOT NULL DEFAULT 'item'
+                    CHECK (line_type IN ('item','deposit','fee','refund','discount','non_grocery')),
     quantity        NUMERIC(10,3),
     unit_price      NUMERIC(10,4),
     weight_lbs      NUMERIC(10,4),
     price_per_lb    NUMERIC(10,4),
     list_price      NUMERIC(10,2),
     price_paid      NUMERIC(10,2),
-    line_total      NUMERIC(10,2)
+    item_confidence NUMERIC(3,2),
+    effective_unit  TEXT GENERATED ALWAYS AS (
+        CASE WHEN weight_lbs IS NOT NULL AND weight_lbs > 0 THEN 'lb' ELSE 'each' END
+    ) STORED,
+    effective_unit_price NUMERIC(12,4) GENERATED ALWAYS AS (
+        CASE
+            WHEN weight_lbs IS NOT NULL AND weight_lbs > 0 THEN price_paid / weight_lbs
+            WHEN quantity   IS NOT NULL AND quantity   > 0 THEN price_paid / quantity
+            ELSE price_paid
+        END
+    ) STORED,
+    UNIQUE (receipt_id, line_no)
 );
 """

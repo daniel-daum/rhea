@@ -34,7 +34,7 @@ enum CSVExporter {
     private static let header =
         "RECEIPT_ID,RECEIPT_KEY,ITEM_KEY," +
         "RECEIPT_SCAN,CHAIN,STORE_NUMBER,STORE_ADDRESS,DATE,RECEIPT_NUMBER," +
-        "RECEIPT_CONFIDENCE,CATEGORY,CODE,ITEM,AI_COMMON_NAME,COMMON_NAME," +
+        "RECEIPT_CONFIDENCE,CATEGORY,CODE,ITEM,AI_COMMON_NAME,COMMON_NAME,LINE_TYPE," +
         "WEIGHT_LB,PRICE_PER_LB,QUANTITY,PRICE_PER_UNIT,LIST_PRICE,PRICE_PAID,ITEM_CONFIDENCE"
 
     private static func makeRow(receipt: Receipt, extracted e: ExtractedReceipt,
@@ -55,6 +55,7 @@ enum CSVExporter {
             q(item.name),                                               // ITEM
             q(item.aiCommonName ?? ""),                                 // AI_COMMON_NAME
             q(item.userCommonName ?? ""),                               // COMMON_NAME (user)
+            q(item.effectiveLineType),                                  // LINE_TYPE
             item.weightLbs.map   { "\($0)" } ?? "",                    // WEIGHT_LB
             item.pricePerLb.map  { "\($0)" } ?? "",                    // PRICE_PER_LB
             item.quantity.map    { "\($0)" } ?? "",                    // QUANTITY
