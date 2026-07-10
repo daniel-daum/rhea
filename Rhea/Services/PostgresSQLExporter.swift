@@ -36,12 +36,14 @@ actor PostgresSQLExporter: PersistenceStore {
 
     // MARK: - SQL generation
 
-    private struct Block {
+    struct Block {
         let id: String
         let sql: String
     }
 
-    private func makeBlock(_ r: Receipt, extracted e: ExtractedReceipt) -> Block {
+    // Internal (not private) so RheaTests can exercise SQL generation directly via
+    // `@testable import Rhea` without writing to ~/Documents/Rhea/receipts.sql.
+    func makeBlock(_ r: Receipt, extracted e: ExtractedReceipt) -> Block {
         let id   = r.id.uuidString
         let key  = r.naturalKey
         let date = String(e.date.prefix(10))                    // YYYY-MM-DD
