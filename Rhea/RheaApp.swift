@@ -4,7 +4,7 @@ import AppKit
 @main
 struct RheaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var viewModel = ReceiptsViewModel()
+    @State private var viewModel = RheaApp.makeViewModel()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @Environment(\.scenePhase) private var scenePhase
 
@@ -18,12 +18,46 @@ struct RheaApp: App {
                 ReceiptDetailView(viewModel: viewModel)
             }
             .frame(minWidth: 1050, minHeight: 600)
-            .task { await viewModel.loadFromDisk() }
+            .task {
+                await viewModel.loadFromDisk()
+                await RheaApp.importUITestFixtureIfNeeded(into: viewModel)
+            }
             .onChange(of: scenePhase) { _, phase in
                 // Backstop: flush all records when the app leaves the foreground.
                 if phase != .active { viewModel.saveAll() }
             }
         }
+    }
+
+    // MARK: - XCUITest seam
+    //
+    // XCUITest drives the compiled app as a black box (no @testable access), so it can't
+    // reach into ReceiptsViewModel directly the way the unit/integration suites do. These
+    // keys are read only from the launched process's environment, so a normal launch (no
+    // keys set) is unaffected:
+    //   UITEST_VAULT_DIR          — isolated LocalStore root instead of Application Support
+    //   UITEST_EXTRACTION_ENDPOINT / UITEST_EXTRACTION_MODEL — point at an in-process stub
+    //   UITEST_IMPORT_PDF         — auto-import this file on launch, bypassing NSOpenPanel
+    //                               (which XCUITest can drive but only flakily/headlessly)
+
+    @MainActor
+    private static func makeViewModel() -> ReceiptsViewModel {
+        let env = ProcessInfo.processInfo.environment
+        let vm: ReceiptsViewModel
+        if let vaultPath = env["UITEST_VAULT_DIR"] {
+            vm = ReceiptsViewModel(store: LocalStore(rootURL: URL(fileURLWithPath: vaultPath)))
+        } else {
+            vm = ReceiptsViewModel()
+        }
+        if let endpoint = env["UITEST_EXTRACTION_ENDPOINT"] { vm.extractionEndpoint = endpoint }
+        if let model = env["UITEST_EXTRACTION_MODEL"] { vm.extractionModel = model }
+        return vm
+    }
+
+    @MainActor
+    private static func importUITestFixtureIfNeeded(into viewModel: ReceiptsViewModel) async {
+        guard let path = ProcessInfo.processInfo.environment["UITEST_IMPORT_PDF"] else { return }
+        await viewModel.importReceipt(from: URL(fileURLWithPath: path))
     }
 }
 

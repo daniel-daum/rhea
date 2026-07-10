@@ -20,6 +20,7 @@ struct SidebarView: View {
                     Label(item.rawValue, systemImage: icon(for: item))
                         .badge(viewModel.badgeCount(for: item))
                         .tag(item)
+                        .accessibilityIdentifier("sidebar-\(item.rawValue.lowercased())")
                 }
             } header: {
                 Text("Library")

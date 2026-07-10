@@ -70,6 +70,7 @@ struct ReceiptListView: View {
                     }
                     .width(min: 50, ideal: 70)
                 }
+                .accessibilityIdentifier("receipts-table")
                 .contextMenu(forSelectionType: Receipt.ID.self) { ids in
                     contextMenuItems(for: ids)
                 }
@@ -92,6 +93,7 @@ struct ReceiptListView: View {
                         .buttonStyle(.bordered)
                         .keyboardShortcut("o", modifiers: .command)
                         .help("Import PDF receipts (⌘O)")
+                        .accessibilityIdentifier("import-pdf-button")
                     }
                 }
                 .overlay {
@@ -290,6 +292,7 @@ struct ReceiptNameCell: View {
             }
         }
         .padding(.vertical, 3)
+        .accessibilityIdentifier("receipt-row-\(receipt.publicID)")
     }
 
     @ViewBuilder
