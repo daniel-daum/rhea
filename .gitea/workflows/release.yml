@@ -161,6 +161,19 @@ jobs:
         env:
           GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Idempotent re-runs: a re-pushed tag (e.g. after a failed run) may
+          # already have a release — delete it so the create below starts clean.
+          EXISTING_ID=$(curl -s \
+            -H "Authorization: token $GITEA_TOKEN" \
+            "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases/tags/${{ steps.version.outputs.tag }}" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin).get("id",""))' 2>/dev/null || true)
+          if [ -n "$EXISTING_ID" ]; then
+            echo "deleting existing release $EXISTING_ID for tag ${{ steps.version.outputs.tag }}"
+            curl -s -X DELETE \
+              -H "Authorization: token $GITEA_TOKEN" \
+              "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases/$EXISTING_ID"
+          fi
+
           BODY=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "${{ steps.changelog.outputs.log }}")
           RESPONSE=$(curl -s -X POST \
             -H "Authorization: token $GITEA_TOKEN" \
@@ -192,8 +205,14 @@ jobs:
           GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           DOWNLOAD_URL="${{ github.server_url }}/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/${dmg_path}"
-          FILE_SIZE=$(stat -f%z "$dmg_path")
-          SIGNATURE=$(sparkle-tools/bin/sign_update "$dmg_path" -f <(echo -n "$SPARKLE_ED_PRIVATE_KEY"))
+          # sign_update opens its key file with Foundation APIs that can't read
+          # bash process-substitution fd paths (/dev/fd/N) — use a real temp file.
+          # Its output is already formatted as enclosure attributes:
+          #   sparkle:edSignature="..." length="..."
+          SPARKLE_KEY_FILE="$RUNNER_TEMP/sparkle_ed_key"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$SPARKLE_KEY_FILE"
+          SIGNATURE_ATTRS=$(sparkle-tools/bin/sign_update "$dmg_path" -f "$SPARKLE_KEY_FILE")
+          rm -f "$SPARKLE_KEY_FILE"
           PUB_DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
 
           # NOTE: this release-side appcast only lists the current release. Sparkle isn't
@@ -213,9 +232,8 @@ jobs:
                 <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
                 <enclosure
                   url="$DOWNLOAD_URL"
-                  length="$FILE_SIZE"
                   type="application/octet-stream"
-                  sparkle:edSignature="$SIGNATURE" />
+                  $SIGNATURE_ATTRS />
               </item>
             </channel>
           </rss>
