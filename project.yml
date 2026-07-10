@@ -36,6 +36,7 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Tests/RheaTests
+      - path: Tests/Fixtures
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.danieldaum.rhea.tests

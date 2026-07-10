@@ -1,0 +1,59 @@
+{
+  "merchant": "TESTMART #4021",
+  "chain": "TESTMART",
+  "storeNumber": "4021",
+  "storeAddress": "123 Fixture Ave, Sampleton CA",
+  "date": "2026-03-16T09:12:00Z",
+  "receiptNumber": "TM-889305",
+  "total": 14.27,
+  "tax": 0.00,
+  "paymentMethod": "Debit ****1188",
+  "overallConfidence": 0.96,
+  "lineItems": [
+    {
+      "name": "TM ROASTED COFFEE 12OZ",
+      "commonName": "roasted coffee",
+      "category": "GROCERY",
+      "barcode": "41000000123",
+      "lineType": "item",
+      "quantity": 1,
+      "unitPrice": 6.99,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": 8.99,
+      "pricePaid": 6.99,
+      "lineTotal": 6.99,
+      "confidence": 0.96
+    },
+    {
+      "name": "TM PEANUT BUTTER",
+      "commonName": "peanut butter",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 1,
+      "unitPrice": 3.99,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": 4.49,
+      "pricePaid": 3.99,
+      "lineTotal": 3.99,
+      "confidence": 0.96
+    },
+    {
+      "name": "TM PASTA SAUCE",
+      "commonName": "pasta sauce",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 1,
+      "unitPrice": 3.29,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": 3.29,
+      "pricePaid": 3.29,
+      "lineTotal": 3.29,
+      "confidence": 0.97
+    }
+  ]
+}

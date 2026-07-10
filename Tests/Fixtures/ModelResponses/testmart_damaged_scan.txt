@@ -1,0 +1,61 @@
+```json
+{
+  "merchant": "TESTMART #4021",
+  "chain": "TESTMART",
+  "storeNumber": "4021",
+  "storeAddress": "123 Fixture Ave, Sampleton CA",
+  "date": "2026-03-20T00:00:00Z",
+  "receiptNumber": null,
+  "total": "$14.01",
+  "tax": "1.04",
+  "paymentMethod": "Visa",
+  "overallConfidence": 0.42,
+  "lineItems": [
+    {
+      "name": "TM WHOLE MILK 1GAL",
+      "commonName": "whole milk",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 1,
+      "unitPrice": 4.29,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": 4.29,
+      "pricePaid": 4.29,
+      "lineTotal": 4.29,
+      "confidence": 0.55
+    },
+    {
+      "name": "TM WHT BREAD LOAF",
+      "commonName": "white bread",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": null,
+      "unitPrice": null,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": "3.19",
+      "pricePaid": "3.19",
+      "lineTotal": "3.19",
+      "confidence": 0.3
+    },
+    {
+      "name": "TM LG EGGS DZ",
+      "commonName": "large eggs",
+      "category": "GROCERY",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": 1,
+      "unitPrice": 5.49,
+      "weightLbs": null,
+      "pricePerLb": null,
+      "listPrice": 5.49,
+      "pricePaid": 5.49,
+      "lineTotal": 5.49,
+      "confidence": 0.6
+    }
+  ]
+}
+```

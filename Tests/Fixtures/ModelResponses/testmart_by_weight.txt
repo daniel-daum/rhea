@@ -1,0 +1,61 @@
+```json
+{
+  "merchant": "TESTMART #4021",
+  "chain": "TESTMART",
+  "storeNumber": "4021",
+  "storeAddress": "123 Fixture Ave, Sampleton CA",
+  "date": "2026-03-12T12:04:00Z",
+  "receiptNumber": "TM-889012",
+  "total": 9.76,
+  "tax": 0.00,
+  "paymentMethod": "Visa ****4477",
+  "overallConfidence": 0.98,
+  "lineItems": [
+    {
+      "name": "ORGANIC BANANAS",
+      "commonName": "organic bananas",
+      "category": "PRODUCE",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": null,
+      "unitPrice": null,
+      "weightLbs": 2.44,
+      "pricePerLb": 0.79,
+      "listPrice": 1.93,
+      "pricePaid": 1.93,
+      "lineTotal": 1.93,
+      "confidence": 0.98
+    },
+    {
+      "name": "ROMA TOMATOES",
+      "commonName": "roma tomatoes",
+      "category": "PRODUCE",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": null,
+      "unitPrice": null,
+      "weightLbs": 0.83,
+      "pricePerLb": 1.99,
+      "listPrice": 1.65,
+      "pricePaid": 1.65,
+      "lineTotal": 1.65,
+      "confidence": 0.97
+    },
+    {
+      "name": "BONELESS CHKN BRST",
+      "commonName": "boneless chicken breast",
+      "category": "MEAT",
+      "barcode": null,
+      "lineType": "item",
+      "quantity": null,
+      "unitPrice": null,
+      "weightLbs": 1.55,
+      "pricePerLb": 3.99,
+      "listPrice": 6.18,
+      "pricePaid": 6.18,
+      "lineTotal": 6.18,
+      "confidence": 0.96
+    }
+  ]
+}
+```
