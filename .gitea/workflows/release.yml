@@ -215,10 +215,9 @@ jobs:
           rm -f "$SPARKLE_KEY_FILE"
           PUB_DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
 
-          # NOTE: this release-side appcast only lists the current release. Sparkle isn't
-          # wired into the app yet (see ticket #45 scope decision), so there's no in-app
-          # consumer of update history to preserve; a follow-up ticket that adds Sparkle to
-          # the app should also decide how far back the feed needs to accumulate.
+          # This release-side appcast only lists the current release — see the
+          # "Publish appcast to stable feed branch" step below for why a single-item feed
+          # is sufficient and how it's exposed at one stable URL for the app's SUFeedURL.
           cat > appcast.xml <<XMLEOF
           <?xml version="1.0" encoding="utf-8"?>
           <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
@@ -243,3 +242,27 @@ jobs:
             -H "Authorization: token $GITEA_TOKEN" \
             -F "attachment=@appcast.xml" \
             "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases/${{ steps.create_release.outputs.release_id }}/assets?name=appcast.xml"
+
+      - name: Publish appcast to stable feed branch
+        env:
+          GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The per-release appcast.xml uploaded above lives at a URL that changes every
+          # release; Sparkle's SUFeedURL needs one URL that never changes. Gitea has no
+          # GitHub-style "latest release asset" redirect (confirmed: /releases/latest/download/
+          # 404s), so instead force-push the same appcast.xml to a dedicated orphan branch and
+          # serve it via Gitea's raw-file endpoint, which is stable by construction. Only the
+          # current release needs to be advertised — Sparkle just compares the feed's newest
+          # sparkle:version against the running app, so a single-item feed with no history is
+          # sufficient and the branch is simply overwritten each run.
+          cp appcast.xml "$RUNNER_TEMP/appcast.xml"
+          git config user.name "gitea-actions"
+          git config user.email "actions@git.danieldaum.net"
+          SERVER_HOST=$(echo "${{ github.server_url }}" | sed -e 's#^https://##')
+          AUTH_URL="https://x-access-token:${GITEA_TOKEN}@${SERVER_HOST}/${{ github.repository }}.git"
+          git checkout --orphan appcast-feed
+          git rm -rf . > /dev/null 2>&1 || true
+          cp "$RUNNER_TEMP/appcast.xml" appcast.xml
+          git add appcast.xml
+          git commit -m "chore: publish appcast.xml for ${{ steps.version.outputs.tag }}"
+          git push "$AUTH_URL" HEAD:appcast-feed --force

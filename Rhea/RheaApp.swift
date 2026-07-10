@@ -7,6 +7,13 @@ struct RheaApp: App {
     @State private var viewModel = RheaApp.makeViewModel()
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @Environment(\.scenePhase) private var scenePhase
+    private let updaterService = UpdaterService()
+    @StateObject private var updaterViewModel: UpdaterViewModel
+
+    init() {
+        let service = updaterService
+        _updaterViewModel = StateObject(wrappedValue: UpdaterViewModel(updater: service.updater))
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -25,6 +32,14 @@ struct RheaApp: App {
             .onChange(of: scenePhase) { _, phase in
                 // Backstop: flush all records when the app leaves the foreground.
                 if phase != .active { viewModel.saveAll() }
+            }
+        }
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    updaterService.checkForUpdates()
+                }
+                .disabled(!updaterViewModel.canCheckForUpdates)
             }
         }
     }

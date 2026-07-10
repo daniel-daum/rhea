@@ -4,6 +4,14 @@ All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versioning is pre-1.0, so breaking
 changes may land in minor releases.
 
+## [0.2.1] - 2026-07-10
+
+### Added
+- Sparkle 2 auto-updates (ticket #27): "Check for Updates…" menu item, with automatic
+  background checks after a one-time first-run consent prompt (Sparkle's own). The
+  release workflow now also force-pushes each release's `appcast.xml` to a dedicated
+  `appcast-feed` branch, giving the app one stable feed URL across releases.
+
 ## [0.2.0] - 2026-07-10
 
 ### Added

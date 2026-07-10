@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	Sparkle 2 update feed. GENERATE_INFOPLIST_FILE merges this partial plist with the
+	build-setting-driven keys (INFOPLIST_KEY_*) rather than replacing them — Sparkle's
+	SUFeedURL/SUPublicEDKey aren't keys Xcode recognizes as INFOPLIST_KEY_ synonyms, so
+	they have to be supplied this way.
+	SUEnableAutomaticChecks is deliberately omitted so Sparkle shows its own one-time
+	consent alert on first launch instead of silently opting the user in.
+	-->
+	<key>SUFeedURL</key>
+	<string>https://git.danieldaum.net/daniel-daum/rhea/raw/branch/appcast-feed/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>1gC9ygjUSyFdMuzMR3lkO8WbrJtZfnKHDlS2SLqh3zU=</string>
+</dict>
+</plist>

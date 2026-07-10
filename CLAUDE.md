@@ -13,7 +13,10 @@ source image, confirms it, and exports confirmed records to CSV or Postgres for 
 - Bundle identifier: `net.danieldaum.rhea`. Product/app name: `Rhea`.
 - Architecture: MVVM. Views are dumb; state lives in a single `@Observable @MainActor` view model (`ReceiptsViewModel`).
 - No third-party SPM/runtime dependencies — Apple frameworks only (SwiftUI, AppKit, PDFKit, Foundation,
-  Observation). XcodeGen is a build-time dev tool installed via Homebrew, not an app dependency.
+  Observation), with one deliberate exception: **Sparkle 2** (`sparkle-project/Sparkle`, pinned exact
+  version in `project.yml`'s `packages:`), added for in-app auto-updates (ticket #27) since Apple provides
+  no first-party update mechanism outside the App Store. XcodeGen is a build-time dev tool installed via
+  Homebrew, not an app dependency.
 - File layout: `Rhea/{Models,ViewModels,Views,Services}`, plus `Rhea/Assets.xcassets`.
 
 ## Build & distribution
@@ -57,6 +60,10 @@ source image, confirms it, and exports confirmed records to CSV or Postgres for 
 - `Rhea/Services/PersistenceStore.swift` — persistence protocol.
 - `Rhea/Services/CSVExporter.swift`, `CSVStore.swift` — CSV export.
 - `Rhea/Services/PostgresStore.swift`, `PostgresSQLExporter.swift` — Postgres export via `psql` + schema constant.
+- `Rhea/Services/UpdaterService.swift` — Sparkle `SPUStandardUpdaterController` wrapper + `UpdaterViewModel`
+  for the "Check for Updates…" menu item.
+- `Rhea/Info.plist` — partial plist merged into the `GENERATE_INFOPLIST_FILE`-generated one; holds
+  `SUFeedURL`/`SUPublicEDKey`, which aren't keys Xcode recognizes as `INFOPLIST_KEY_*` synonyms.
 - `Rhea/Views/` — `ReceiptListView`, `ReceiptDetailView`, `ReceiptEditForm`, `SidebarView`, `SettingsView`, `ResizableSplitView`.
 - `Packaging/AppIcon.png` — 1024px icon master.
 
@@ -141,6 +148,22 @@ Only confirmed receipts with extracted data are exported.
   `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` so older databases upgrade in place. `PostgresSQLExporter`
   holds the schema constant shown in Settings.
 
+## Auto-updates (Sparkle)
+- `UpdaterService` wraps `SPUStandardUpdaterController`; `RheaApp` adds a "Check for Updates…" item to the
+  app menu (`CommandGroup(after: .appInfo)`) bound to `UpdaterViewModel.canCheckForUpdates`.
+- `SUEnableAutomaticChecks` is deliberately not set — Sparkle shows its own one-time consent alert on first
+  launch rather than the app silently opting the user into background checks.
+- `SUFeedURL`/`SUPublicEDKey` live in `Rhea/Info.plist` (see File map) rather than as `INFOPLIST_KEY_*`
+  build settings, since Xcode doesn't recognize those as generated-Info.plist synonyms.
+- **Stable feed URL**: each tagged release's `appcast.xml` is uploaded as a release asset (per-release URL,
+  changes every tag) *and* force-pushed to a dedicated orphan branch `appcast-feed`
+  (`.gitea/workflows/release.yml`, "Publish appcast to stable feed branch" step). `SUFeedURL` points at that
+  branch's raw file (`.../raw/branch/appcast-feed/appcast.xml`), which is the one URL that never changes.
+  Gitea has no GitHub-style `/releases/latest/download/<asset>` redirect (confirmed 404), which is why this
+  exists instead of pointing `SUFeedURL` straight at a release asset.
+- The feed is single-item (current release only, no history) — Sparkle only needs the newest
+  `sparkle:version` to compare against the running app.
+
 ## Change log
 1. **Filters & statuses:** top filter is now All / Queued / Processed / Confirmed / Failed; the post-extraction
    `done` state is labeled blue **"Processed"**, green only after the user confirms.
@@ -182,6 +205,11 @@ Only confirmed receipts with extracted data are exported.
     GROCERY OUTLET and PIEDMONT GROCERY. The baseline dataset/pipeline lives in `receipts_raw/`
     (extraction spec, per-receipt JSONs, `qc.py`, `assemble.py`, `products_map.csv`) and loads via
     `db/baseline_full.sql` or `db/load_baseline.sh`; analysis queries in `db/analysis_queries.sql`.
+17. **Sparkle 2 auto-updates** (ticket #27, first third-party dependency — see "Stack & build" exception):
+    `UpdaterService` + "Check for Updates…" menu item; `SUFeedURL`/`SUPublicEDKey` merged into the generated
+    Info.plist via `Rhea/Info.plist`; release workflow force-pushes each release's `appcast.xml` to a
+    dedicated `appcast-feed` branch so Sparkle has one stable feed URL (Gitea has no "latest release asset"
+    redirect). See "Auto-updates (Sparkle)" above for details.
 
 ## Working agreement
 - Keep the build green (`xcodebuild ... build`) after each change; run `xcodegen generate` after editing `project.yml`.

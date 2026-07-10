@@ -9,6 +9,10 @@ settings:
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.6.4
 targets:
   Rhea:
     type: application
@@ -16,6 +20,8 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Rhea
+    dependencies:
+      - package: Sparkle
     settings:
       base:
         PRODUCT_NAME: Rhea
@@ -27,6 +33,10 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Rhea
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 Daniel Daum"
+        # Custom Sparkle keys (SUFeedURL, SUPublicEDKey) aren't ones Xcode recognizes as
+        # INFOPLIST_KEY_ synonyms, so they come from a merged partial plist instead; see
+        # Rhea/Info.plist.
+        INFOPLIST_FILE: Rhea/Info.plist
       configs:
         Debug:
           # Ad-hoc "sign to run locally" so local/CI builds work without a team.
