@@ -25,7 +25,10 @@ jobs:
 
       - name: Upload result bundle
         if: always()
-        uses: actions/upload-artifact@v4
+        # Gitea's built-in artifact backend only implements the v3
+        # upload-artifact/download-artifact protocol; v4+ (the
+        # @actions/artifact v2 client) errors with GHESNotSupportedError.
+        uses: actions/upload-artifact@v3
         with:
           name: test-results
           path: TestResults.xcresult
