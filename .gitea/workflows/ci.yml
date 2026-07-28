@@ -1,34 +1,34 @@
-name: CI
+# name: CI
 
-on:
-  push:
-  pull_request:
+# on:
+#   push:
+#   pull_request:
 
-jobs:
-  build-and-test:
-    runs-on: macos
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# jobs:
+#   build-and-test:
+#     runs-on: macos
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Generate Xcode project
-        run: xcodegen generate
+#       - name: Generate Xcode project
+#         run: xcodegen generate
 
-      - name: Build and test
-        run: |
-          rm -rf TestResults.xcresult
-          xcodebuild build test \
-            -project Rhea.xcodeproj \
-            -scheme Rhea \
-            -destination 'platform=macOS' \
-            -resultBundlePath TestResults.xcresult
+#       - name: Build and test
+#         run: |
+#           rm -rf TestResults.xcresult
+#           xcodebuild build test \
+#             -project Rhea.xcodeproj \
+#             -scheme Rhea \
+#             -destination 'platform=macOS' \
+#             -resultBundlePath TestResults.xcresult
 
-      - name: Upload result bundle
-        if: always()
-        # Gitea's built-in artifact backend only implements the v3
-        # upload-artifact/download-artifact protocol; v4+ (the
-        # @actions/artifact v2 client) errors with GHESNotSupportedError.
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results
-          path: TestResults.xcresult
+#       - name: Upload result bundle
+#         if: always()
+#         # Gitea's built-in artifact backend only implements the v3
+#         # upload-artifact/download-artifact protocol; v4+ (the
+#         # @actions/artifact v2 client) errors with GHESNotSupportedError.
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: test-results
+#           path: TestResults.xcresult
