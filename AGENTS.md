@@ -4,6 +4,11 @@ Reference doc for any coding agent or new contributor working in this repo. For
 Claude-Code-specific working conventions (things learned the hard way, kept as
 guardrails), see `CLAUDE.md` — read both before making non-trivial changes.
 
+> **Archived.** Rhea was a deliberate experiment in AI-assisted software development.
+> It was designed, specified, and written primarily through conversation with Claude.
+> The code is functional but rough — it's a case study, not a product.
+> No further development is planned.
+
 ## What this is
 
 Rhea is a native macOS SwiftUI app for turning scanned grocery-receipt PDFs into
@@ -89,10 +94,10 @@ Rhea/
 - `Receipt`: `id` (UUID), `sourceURL` (in-vault copy), `pageImage` (Data?), `status`
   (`queued`/`inProgress`/`done`/`failed`), `extracted` (`ExtractedReceipt?`),
   `confirmed` (Bool), `errorMessage`, and `submittedAt`/`startedAt`/`finishedAt`.
-  - `publicID` = `rhea_receipt_id_<uuid, no dashes>`.
-  - `naturalKey` = `chain_storeNumber_date_receiptNumber` (slugified); falls back to
-    a UUID-derived `generatedReceiptNumber` when the model can't read one, then to
-    `publicID` if chain + one other part are still missing. Used as the DB key.
+    - `publicID` = `rhea_receipt_id_<uuid, no dashes>`.
+    - `naturalKey` = `chain_storeNumber_date_receiptNumber` (slugified); falls back to
+      a UUID-derived `generatedReceiptNumber` when the model can't read one, then to
+      `publicID` if chain + one other part are still missing. Used as the DB key.
 - `ExtractedReceipt`: `merchant`, `chain?`, `storeNumber?`, `storeAddress?`, `date`
   (ISO-8601), `receiptNumber?`, `total`, `tax?`, `paymentMethod?`, `lineItems`,
   `overallConfidence?` (0–1, the model's confidence in the whole extraction).
@@ -100,10 +105,10 @@ Rhea/
   read-only), `userCommonName?` (user's own normalized name, editable), `category?`,
   `barcode?`, `quantity?`, `unitPrice?`, `weightLbs?`, `pricePerLb?`, `listPrice?`,
   `pricePaid?`, `lineTotal?`, `confidence?` (0–1, per-line model confidence).
-  - `stableKey(receiptKey:index:)` = `barcode_<barcode>` when present, else
-    `<receiptKey>_itemNN`.
-  - The model emits `commonName` in its JSON; decoding maps that (and legacy saved
-    records) into `aiCommonName`.
+    - `stableKey(receiptKey:index:)` = `barcode_<barcode>` when present, else
+      `<receiptKey>_itemNN`.
+    - The model emits `commonName` in its JSON; decoding maps that (and legacy saved
+      records) into `aiCommonName`.
 
 All model decoding goes through `LenientDecoding` helpers because local vision
 models drift on types (numeric fields as strings, quoted decimals, nulls in
